@@ -51,13 +51,14 @@ Process-1-[4/50]=> short_id: K4138503E6  |  long_id: 1156552473591486
 see zips in project folder
 ```
 
-##To Do
+## To Do
 * Pass arguments through commandline.
 * Do the download step with the requests library if possible.
 * Improve the output of the search_short_ids.py script (multiprocessed output).
 * Download zips to a download folder.
 
 
+## LICENSE
 Copyright (c) <2015> <Josefson Fraga Souza>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
