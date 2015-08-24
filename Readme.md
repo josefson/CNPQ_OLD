@@ -9,6 +9,7 @@ The problem was broken into 3 parts, which are necessary for getting the final o
 
 ## Requirements
 Python 2.7.X, Mozilla Firefox
+
 Install python libraries by using the requirements.txt
 ```
 pip install -r requirements.txt
