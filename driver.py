@@ -1,9 +1,8 @@
 """
 My personalized driver
 """
-from selenium.webdriver.common.by import By
-from selenium import webdriver
 import os
+from selenium import webdriver
 
 
 class LattesDriver(object):

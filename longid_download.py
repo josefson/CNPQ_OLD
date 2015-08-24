@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
+"""
+This file is responsible to download the curriculum xml
+"""
+import re
+import requests
+from PIL import Image
+from captcha import Captcha
+from bs4 import BeautifulSoup
 from driver import LattesDriver
 from selenium.webdriver.common.by import By
+from multiprocessing import Process, current_process
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from multiprocessing import Process, current_process
-from bs4 import BeautifulSoup
-from captcha import Captcha
-from PIL import Image
-import requests
-import time
-import os
-import re
 
 
 def short_ids(short_id_file):
@@ -36,7 +37,7 @@ def get_short_url(short_id):
     """Returns a short_url for a given short_id."""
     base_url = 'http://buscatextual.cnpq.br/buscatextual/'\
                'visualizacv.do?id='
-    return base_url + str(short_id) 
+    return base_url + str(short_id)
 
 def print_request(request):
     """Print a request state for debugging purposes."""
@@ -47,9 +48,9 @@ def print_request(request):
 
 def save(request, file_name, mode):
     """Save a request.content into a file for debugging purposes."""
-    f = open(file_name, mode)
-    f.write(request.content)
-    f.close()
+    temp_file = open(file_name, mode)
+    temp_file.write(request.content)
+    temp_file.close()
 
 def verify_page(page_req):
     """Given a page request returns a match of which page it belongs to."""
@@ -132,17 +133,19 @@ def post_do(inf_cap_req):
     """Given a previous session request this function performs some kind of an
     obscure post validation which allow us to only then visualize the
     curriculum in the next request."""
-    post_url =  'http://buscatextual.cnpq.br/buscatextual/visualizacv.do'
+    post_url = 'http://buscatextual.cnpq.br/buscatextual/visualizacv.do'
     short_id = inf_cap_req.request.headers['Referer'][-10:]
     headers = {}
-    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;'\
+                        'q=0.9,*/*;q=0.8'
     headers['Accept-Encoding'] = 'gzip, deflate'
     headers['Accept-Language'] = 'en-US,en;q=0.5'
     headers['Connection'] = 'keep-alive'
     headers['Cookie'] = inf_cap_req.request.headers['Cookie']
     headers['DNT'] = '1'
     headers['Host'] = 'buscatextual.cnpq.br'
-    headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0'
+    headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; '\
+                            'rv:35.0) Gecko/20100101 Firefox/35.0'
     # headers['Referer'] = referer
     headers['Referer'] = inf_cap_req.request.headers['Referer']
     headers['Content-Length'] = '999'
@@ -151,14 +154,12 @@ def post_do(inf_cap_req):
     files = {'metodo' : (None, 'visualizarCV'), 'id' : (None, short_id),
              'idiomaExibicao' : (None, ''), 'tipo' : (None, ''),
              'informado' : (None, '')}
-    post_req = requests.post(post_url, headers=headers, files=files)
-    return post_req
+    requests.post(post_url, headers=headers, files=files)
 
 def cv_view(inf_cap_req):
     """Given a previous session request it gets and returns the cv page."""
     referer = inf_cap_req.request.headers['Referer']
     view_url = referer
-    short_id = str(referer[-10:])
     headers = {}
     headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q='\
                         '0.9,*/*;q=0.8'
@@ -171,31 +172,10 @@ def cv_view(inf_cap_req):
     cv_request = requests.get(view_url, headers=headers)
     return cv_request
 
-def post_download_do(inf_cap_req):
-    post_url =  'http://buscatextual.cnpq.br/buscatextual/download.do?'\
-                'metodo=apresentar&idcnpq='
-    long_id = inf_cap_req.request.headers['Referer'][-16:]
-    headers = {}
-    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-    headers['Accept-Encoding'] = 'gzip, deflate'
-    headers['Accept-Language'] = 'en-US,en;q=0.5'
-    headers['Connection'] = 'keep-alive'
-    headers['Cookie'] = inf_cap_req.request.headers['Cookie']
-    headers['DNT'] = '1'
-    headers['Host'] = 'buscatextual.cnpq.br'
-    headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0'
-    # headers['Referer'] = referer
-    headers['Referer'] = inf_cap_req.request.headers['Referer']
-    headers['Content-Length'] = '999'
-    headers['Cookie'] = inf_cap_req.request.headers['Cookie']
-    # cookies = inf_cap_req.cookies   # Necessary.
-    files = {'metodo' : (None, 'downloadCV'), 'idcnpq' : (None, long_id),
-             'informado' : (None, '')}
-    post_req = requests.post(post_url, headers=headers, files=files)
-    return post_req
-
 def download_cv(driver, long_id):
-    pname = current_process().name
+    """Given a selenium webdriver and a long_id, it downloads the related xml
+    curriculum."""
+    # pname = current_process().name
     long_url = 'http://buscatextual.cnpq.br/buscatextual/download.do?metodo='\
                'apresentar&idcnpq=' + long_id
     input_locator = 'informado'
@@ -205,7 +185,7 @@ def download_cv(driver, long_id):
         driver.get(long_url)
         # print '{}download_cv: waiting for it to load...'.format(pname)
         wait = WebDriverWait(driver, 10)
-        wlwmwnt = wait.until(EC.presence_of_element_located((By.ID,
+        element = wait.until(EC.presence_of_element_located((By.ID,
                                                              captcha_locator)))
         # print '{}download_cv: cracking captcha...'.format(pname)
         code = crack_captcha(driver)
@@ -228,11 +208,11 @@ def worker(short_id_list):
     """Given a list of short_ids it iterates over them to get the long_id."""
     driver = LattesDriver().get_driver()
     pname = current_process().name
-    for count,short_id in enumerate(short_id_list):
+    for count, short_id in enumerate(short_id_list):
         while True:
             img_req = captcha_image(get_short_url(short_id))
             image_name = 'temp_' + pname + '.png'
-            image = open(image_name, 'wb').write(img_req.content)
+            open(image_name, 'wb').write(img_req.content)
             code = Captcha(image_name).get_text().upper()
             if len(code) != 4:
                 # print '{}worker: code != 4: {}'.format(pname, code)
@@ -240,28 +220,26 @@ def worker(short_id_list):
             elif len(code) == 4:
                 # print '{}worker: code == 4: {}'.format(pname, code)
                 inf_req = inform_captcha(img_req, code)
-                post_req = post_do(inf_req)
+                post_do(inf_req)
                 cv_req = cv_view(inf_req)
                 if verify_page(cv_req) == 'CVPAGE':
                     # print '{}worker: inside CVPAGE, getting long_id'.format(pname)
                     long_id = scrap_long_id(cv_req)
                     print '{}-[{}/{}]=> short_id: {}  |  long_id: {}'.format(
-                            pname, count+1, len(short_id_list),
-                            short_id, long_id)
+                        pname, count+1, len(short_id_list), short_id, long_id)
                     # print '{}worker: Downloading the cv for long_id: {}'.format(pname, long_id)
                     download_cv(driver, long_id)
                     break
                 elif verify_page(cv_req) == 'NOTFOUND':
                     print '{}-[{}/{}]=> short_id: {}  |  long_id: NOTFOUND'.format(
-                            pname, count+1, len(short_id_list),
-                            short_id)
+                        pname, count+1, len(short_id_list), short_id)
                     break
     driver.close()
 
 
 if __name__ == '__main__':
     CORES = 2
-    SHORT_ID_FILE = 'data.csv'
+    SHORT_ID_FILE = 'short_ids.csv'
     short_id_list = short_ids(SHORT_ID_FILE)
     splited_lists = split_list(short_id_list[0:100], CORES)
     for splited_list in range(len(splited_lists)):

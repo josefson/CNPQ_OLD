@@ -6,13 +6,19 @@ order to get the longIds, which we need to get the xml curriculum.
 import re
 import time
 import datetime
-import multiprocessing
 import requests
-import urllib2
+import multiprocessing
 from bs4 import BeautifulSoup
 
 
 INTERVAL = 1000   # results per page.
+SHORT_ID_FILE = 'short_ids.csv'
+
+def split_list(alist, wanted_parts=1):
+    """Split a list of intervals in n parts in order to be multiprocessed."""
+    length = len(alist)
+    return [alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
+            for i in range(wanted_parts)]
 
 def search(reg_from, reg_to):
     """Performs a page requests given an interval."""
@@ -28,7 +34,7 @@ def search(reg_from, reg_to):
 def results_total():
     """Returns the total of results inside the search() query. This is used
     in order to multiprocess and create the pagination list."""
-    results = search(0,10)
+    results = search(0, 10)
     soup = BeautifulSoup(results.content, 'lxml')
     return int(str(soup.find('b')).lstrip('<b>').rstrip('</b>'))
 
@@ -58,26 +64,21 @@ def worker(page_list):
     """This is the function to be multiprocessed. It iterates over a list of
     pagigation values, requesting, scraping the shortIds of each
     result in its html, and writing it inside an external data file."""
-    data = open('data.csv', 'a')
+    data = open(SHORT_ID_FILE, 'a')
     start = time.time()
     time_stamp = datetime.datetime.fromtimestamp(start).strftime('%Y-%m-%d %H:%M:%S')
     print time_stamp
     for reg_from in page_list:
         print 'getting {}-{}...'.format(reg_from, reg_from + INTERVAL)
         researchers = process_people(search(reg_from, INTERVAL))
-        for r in researchers:
-            if len(r) > 0:
-                data.write('{}\n'.format(r[0]))
+        for researcher in researchers:
+            if len(researcher) > 0:
+                data.write('{}\n'.format(researcher[0]))
     data.close()
     end = time.time()
     time_stamp = datetime.datetime.fromtimestamp(end).strftime('%Y-%m-%d %H:%M:%S')
     print time_stamp
 
-def split_list(alist, wanted_parts=1):
-    """Split a list of intervals in n parts in order to be multiprocessed."""
-    length = len(alist)
-    return [ alist[i*length // wanted_parts: (i+1)*length // wanted_parts] 
-             for i in range(wanted_parts) ]
 
 if __name__ == '__main__':
     cores = 2   # Number of processes to split the task into workers.
