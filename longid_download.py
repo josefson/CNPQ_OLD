@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-CORES = 2
+CORES = 4
 SHORT_ID_FILE = 'short_ids.csv'   # Input file.
 LONG_ID_FILE = 'long_ids.csv'   # Output file.
 
@@ -22,9 +22,18 @@ def short_ids(short_id_file):
     """This function expects a short_id file and returns a list with all
     short_ids."""
     short_id_list = []
+    invalid_ids = []
     with open(short_id_file) as data_file:
         for line in data_file:
-            short_id_list.append(line.strip('\n'))
+            short_id = line.strip('\n')
+            if len(short_id) == 10:
+                short_id_list.append(line.strip('\n'))
+            else:
+                invalid_ids.append(short_id)
+    print 'Total of IDs in the file: {}.'.format(len(short_id_list) +
+            len(invalid_ids))
+    print 'InvalidIDs: {}'.format(len(invalid_ids))
+    print 'Valid IDs to downlaod: {}'.format(len(short_id_list))
     data_file.close()
     short_id_list = short_id_list
     return short_id_list
@@ -203,7 +212,7 @@ def download_cv(driver, long_id):
     element = driver.find_element(By.ID, input_locator)
     element.clear()
     element.send_keys(code + '\n')
-    # print '{}download_cv: waiting for download...'.format(pname)
+    # print '{}S[MaS[MaSdownload_cv: waiting for download...'.format(pname)
     wait = WebDriverWait(driver, 10)
     element = wait.until(EC.invisibility_of_element_located((By.ID,
                                                              captcha_locator)))
@@ -212,7 +221,7 @@ def worker(short_id_list):
     """Given a list of short_ids it iterates over them to get the long_id."""
     driver = LattesDriver().get_driver()
     pname = current_process().name
-    output_file = open(LONG_ID_FILE, 'w')
+    output_file = open(LONG_ID_FILE, 'a')
     for count, short_id in enumerate(short_id_list):
         while True:
             img_req = captcha_image(get_short_url(short_id))
@@ -246,7 +255,7 @@ def worker(short_id_list):
 def main():
     """Main function, which controls the workflow of the program."""
     short_id_list = short_ids(SHORT_ID_FILE)
-    splited_lists = split_list(short_id_list[0:100], CORES)
+    splited_lists = split_list(short_id_list, CORES)
     for splited_list in range(len(splited_lists)):
         temp = (splited_lists[splited_list],)
         process = Process(target=worker, args=temp)

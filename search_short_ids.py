@@ -12,7 +12,7 @@ from multiprocessing import Process, current_process
 
 
 CORES = 2   # Number of processes to split the task into workers.
-SHORT_ID_FILE = 'short_ids.csv'
+SHORT_ID_FILE = 'mydata.csv'
 INTERVAL = 1000   # results per page.
 
 def split_list(alist, wanted_parts=1):
