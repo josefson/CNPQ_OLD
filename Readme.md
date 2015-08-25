@@ -50,6 +50,9 @@ see zips in xmls folder
 * Pass arguments through commandline.
 * Do the download step with the requests library if possible.
 
+## Thanks
+Special thanks to my friend Bruno that guided me in the way how images work.
+
 
 ## LICENSE
 Copyright (c) <2015> <Josefson Fraga Souza>
