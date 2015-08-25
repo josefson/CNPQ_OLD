@@ -7,12 +7,13 @@ import re
 import time
 import datetime
 import requests
-import multiprocessing
 from bs4 import BeautifulSoup
+from multiprocessing import Process, current_process
 
 
-INTERVAL = 1000   # results per page.
+CORES = 2   # Number of processes to split the task into workers.
 SHORT_ID_FILE = 'short_ids.csv'
+INTERVAL = 1000   # results per page.
 
 def split_list(alist, wanted_parts=1):
     """Split a list of intervals in n parts in order to be multiprocessed."""
@@ -56,7 +57,7 @@ def pagination():
     """Returns a list of pages, where page is an interval of registers,
     from/to."""
     total = results_total()
-    print total
+    print 'Total of registers: {}'.format(total)
     pages = range(0, total, INTERVAL)
     return pages
 
@@ -65,11 +66,12 @@ def worker(page_list):
     pagigation values, requesting, scraping the shortIds of each
     result in its html, and writing it inside an external data file."""
     data = open(SHORT_ID_FILE, 'a')
+    pname = current_process().name
     start = time.time()
     time_stamp = datetime.datetime.fromtimestamp(start).strftime('%Y-%m-%d %H:%M:%S')
-    print time_stamp
+    print '{}- {}'.format(pname, time_stamp)
     for reg_from in page_list:
-        print 'getting {}-{}...'.format(reg_from, reg_from + INTERVAL)
+        print '{}- Scrapping from {} to {} registers'.format(pname, reg_from, reg_from + INTERVAL)
         researchers = process_people(search(reg_from, INTERVAL))
         for researcher in researchers:
             if len(researcher) > 0:
@@ -77,14 +79,17 @@ def worker(page_list):
     data.close()
     end = time.time()
     time_stamp = datetime.datetime.fromtimestamp(end).strftime('%Y-%m-%d %H:%M:%S')
-    print time_stamp
+    print '{}- {}'.format(pname, time_stamp)
+
+def main():
+    """Main function, which controls the workflow of the program."""
+    pages = pagination()
+    pages_core = split_list(pages, wanted_parts=CORES)
+    for i in range(len(pages_core)):
+        temp = (pages_core[i],)
+        process = Process(target=worker, args=temp)
+        process.start()
 
 
 if __name__ == '__main__':
-    cores = 2   # Number of processes to split the task into workers.
-    pages = pagination()
-    pages_core = split_list(pages, wanted_parts=cores)
-    for i in range(len(pages_core)):
-        temp = (pages_core[i],)
-        p = multiprocessing.Process(target=worker, args=temp)
-        p.start()
+    main()

@@ -14,6 +14,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
+CORES = 2
+SHORT_ID_FILE = 'short_ids.csv'   # Input file.
+LONG_ID_FILE = 'long_ids.csv'   # Output file.
+
 def short_ids(short_id_file):
     """This function expects a short_id file and returns a list with all
     short_ids."""
@@ -208,6 +212,7 @@ def worker(short_id_list):
     """Given a list of short_ids it iterates over them to get the long_id."""
     driver = LattesDriver().get_driver()
     pname = current_process().name
+    output_file = open(LONG_ID_FILE, 'w')
     for count, short_id in enumerate(short_id_list):
         while True:
             img_req = captcha_image(get_short_url(short_id))
@@ -227,22 +232,26 @@ def worker(short_id_list):
                     long_id = scrap_long_id(cv_req)
                     print '{}-[{}/{}]=> short_id: {}  |  long_id: {}'.format(
                         pname, count+1, len(short_id_list), short_id, long_id)
+                    output_file.write(short_id + ' | ' + long_id + '\n')
                     # print '{}worker: Downloading the cv for long_id: {}'.format(pname, long_id)
                     download_cv(driver, long_id)
                     break
                 elif verify_page(cv_req) == 'NOTFOUND':
                     print '{}-[{}/{}]=> short_id: {}  |  long_id: NOTFOUND'.format(
                         pname, count+1, len(short_id_list), short_id)
+                    output_file.write(short_id + ' | NOTFOUND\n')
                     break
     driver.close()
 
-
-if __name__ == '__main__':
-    CORES = 2
-    SHORT_ID_FILE = 'short_ids.csv'
+def main():
+    """Main function, which controls the workflow of the program."""
     short_id_list = short_ids(SHORT_ID_FILE)
     splited_lists = split_list(short_id_list[0:100], CORES)
     for splited_list in range(len(splited_lists)):
         temp = (splited_lists[splited_list],)
         process = Process(target=worker, args=temp)
         process.start()
+
+
+if __name__ == '__main__':
+    main()
