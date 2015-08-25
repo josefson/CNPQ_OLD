@@ -51,11 +51,11 @@ see zips in xmls folder
 * Do the download step with the requests library if possible.
 
 ## Thanks
-Special thanks to my friend Bruno that guided me in the way how images work.
+Special thanks to my friend Bruno Duarte that guided me in the way how images work.
 
 
 ## LICENSE
-Copyright (c) <2015> <Josefson Fraga Souza>
+Copyright (c) 2015 Josefson Fraga Souza
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
