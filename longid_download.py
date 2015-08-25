@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-CORES = 4
+CORES = 2
 SHORT_ID_FILE = 'short_ids.csv'   # Input file.
 LONG_ID_FILE = 'long_ids.csv'   # Output file.
 
@@ -30,8 +30,8 @@ def short_ids(short_id_file):
                 short_id_list.append(line.strip('\n'))
             else:
                 invalid_ids.append(short_id)
-    print 'Total of IDs in the file: {}.'.format(len(short_id_list) +
-            len(invalid_ids))
+    print 'Total of IDs in the file: {}.'.format(
+        len(short_id_list) + len(invalid_ids))
     print 'InvalidIDs: {}'.format(len(invalid_ids))
     print 'Valid IDs to downlaod: {}'.format(len(short_id_list))
     data_file.close()
@@ -233,9 +233,22 @@ def worker(short_id_list):
                 continue
             elif len(code) == 4:
                 # print '{}worker: code == 4: {}'.format(pname, code)
-                inf_req = inform_captcha(img_req, code)
-                post_do(inf_req)
-                cv_req = cv_view(inf_req)
+                try:
+                    inf_req = inform_captcha(img_req, code)
+                    post_do(inf_req)
+                    cv_req = cv_view(inf_req)
+                except requests.exceptions.Timeout as terror:
+                    print '{}-[Loop-{}]=> Timeout: {}\nTrying'\
+                            'again...'.format(pname, count+1, terror)
+                    continue
+                except requests.exceptions.ConnectionError as cerror:
+                    print '{}-[Loop-{}]=> Connection Error: {}\nTrying'\
+                            'again...'.format(pname, count+1, cerror)
+                    continue
+                except requests.exceptions.RequestException as rerror:
+                    print '{}-[Loop-{}]=> RequestError: {}\nTrying'\
+                            'again...'.format(pname, count+1, rerror)
+                    continue
                 if verify_page(cv_req) == 'CVPAGE':
                     # print '{}worker: inside CVPAGE, getting long_id'.format(pname)
                     long_id = scrap_long_id(cv_req)
@@ -243,7 +256,10 @@ def worker(short_id_list):
                         pname, count+1, len(short_id_list), short_id, long_id)
                     output_file.write(short_id + ' | ' + long_id + '\n')
                     # print '{}worker: Downloading the cv for long_id: {}'.format(pname, long_id)
-                    download_cv(driver, long_id)
+                    try:
+                        download_cv(driver, long_id)
+                    except:
+                        continue
                     break
                 elif verify_page(cv_req) == 'NOTFOUND':
                     print '{}-[{}/{}]=> short_id: {}  |  long_id: NOTFOUND'.format(
@@ -255,7 +271,7 @@ def worker(short_id_list):
 def main():
     """Main function, which controls the workflow of the program."""
     short_id_list = short_ids(SHORT_ID_FILE)
-    splited_lists = split_list(short_id_list, CORES)
+    splited_lists = split_list(short_id_list[0:10], CORES)
     for splited_list in range(len(splited_lists)):
         temp = (splited_lists[splited_list],)
         process = Process(target=worker, args=temp)
