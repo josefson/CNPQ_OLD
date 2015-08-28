@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Git logging
 """
 This file is responsible to download the curriculum xml
 """
