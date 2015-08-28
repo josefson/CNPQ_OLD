@@ -315,7 +315,7 @@ def worker(short_id_list):
 def main():
     """Main function, which controls the workflow of the program."""
     short_id_list = short_ids(SHORT_ID_FILE)
-    splited_lists = split_list(short_id_list[0:10])
+    splited_lists = split_list(short_id_list)
     for splited_list in range(len(splited_lists)):
         temp = (splited_lists[splited_list],)
         process = Process(target=worker, args=temp)
