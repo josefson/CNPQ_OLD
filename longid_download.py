@@ -231,12 +231,15 @@ def worker(short_id_list):
     pname = current_process().name
     logging.info('%s: Started', pname)
     try:
-        driver = LattesDriver().get_driver()
+        lattesdriver = LattesDriver()
+        display = lattesdriver.get_display()
+        driver = lattesdriver.get_driver()
     except WebDriverException, error:
         print error
-        sys.exit('Failed to initialize selenium drivers. Calm down, sometimes '\
-                 'this happens, please try again. If this error persists' \
-                 'check if the Browser version is compatible with selenium.')
+        sys.exit('Failed to initialize selenium drivers. Calm down, '\
+                'sometimes this happens, please try again. If this error '\
+                'persists check if the Browser version is compatible with '\
+                'selenium.')
     output_file = open(LONG_ID_FILE, 'a')
     for count, short_id in enumerate(short_id_list):
         while True:
@@ -292,8 +295,8 @@ def worker(short_id_list):
                     output_file.flush()
                     while True:
                         try:
-                            logging.info('%s- Downloading the CV for long_id: %s',
-                                         pname, long_id)
+                            logging.info('%s- Downloading the CV for long_id:'\
+                                         ' %s', pname, long_id)
                             download_cv(driver, long_id)
                             logging.info('%s- Download finished!', pname)
                             break
@@ -311,6 +314,7 @@ def worker(short_id_list):
                     output_file.flush()
                     break
     driver.close()
+    display.close()
 
 def main():
     """Main function, which controls the workflow of the program."""

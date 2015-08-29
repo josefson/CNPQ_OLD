@@ -22,11 +22,15 @@ class LattesDriver(object):
                                     False)
         self.profile.set_preference("browser.helperApps.neverAsk.saveToDisk",
                                     "application/zip")
-        display = Display(visible=0, size=(800, 600))
-        display.start()
+        self.display = Display(visible=0, size=(800, 600))
+        self.display.start()
         self.driver = webdriver.Firefox(firefox_profile=self.profile)
         self.driver.implicitly_wait(5)
 
     def get_driver(self):
         """Returns the created and configured webdriver."""
         return self.driver
+
+    def get_display(self):
+        """Return a xvfb display."""
+        return self.display
