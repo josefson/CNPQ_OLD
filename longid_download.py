@@ -314,7 +314,7 @@ def worker(short_id_list):
                     output_file.flush()
                     break
     driver.close()
-    display.close()
+    display.stop()
 
 def main():
     """Main function, which controls the workflow of the program."""
