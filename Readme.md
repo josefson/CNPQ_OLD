@@ -8,12 +8,19 @@ The problem was broken into 3 parts, which are necessary for getting the final o
 3. Only with a long_id we can get the downlaod links for each curriculum. Here a new captcha will be presented and the software will take care of it to.
 
 ## Requirements
-Python 2.7.X, Mozilla Firefox
+Python 2.7.X
 
-Install python libraries by using the requirements.txt
-```
-pip install -r requirements.txt
-```
+Mozilla Firefox - Sersion supported by Selenium libraries. At the present time i used the 35.0.1.
+
+Xvfb - X virtual frame buffer, which is used for a headless browser.
+
+Python libraries necessary:
+* requests
+* BeautifulSoup
+* lxml
+* selenium
+* pyvirtualdisplay
+* Pillow
 
 ## How to use it
 Open the search_short_ids.py and the longid_download.py and set the proper parameters at the top of the file as showed in the wxample bellow. For example, you could change  the core numbers, or the short_id_file.
@@ -49,6 +56,7 @@ see zips in xmls folder
 ## To Do
 * Pass arguments through commandline.
 * Do the download step with the requests library if possible.
+* Port to OSX and maybe to Windows
 
 ## Thanks
 Special thanks to my friend Bruno Duarte that guided me in the way how images work.
