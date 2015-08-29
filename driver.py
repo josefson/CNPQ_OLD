@@ -3,6 +3,7 @@ My personalized driver
 """
 import os
 from selenium import webdriver
+from pyvirtualdisplay import Display
 
 
 class LattesDriver(object):
@@ -21,6 +22,8 @@ class LattesDriver(object):
                                     False)
         self.profile.set_preference("browser.helperApps.neverAsk.saveToDisk",
                                     "application/zip")
+        display = Display(visible=0, size=(800, 600))
+        display.start()
         self.driver = webdriver.Firefox(firefox_profile=self.profile)
         self.driver.implicitly_wait(5)
 
