@@ -18,9 +18,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException
 
 
-# CORES = 1
-# SHORT_ID_FILE = 'short_ids.csv'   # Input file.
-# LONG_ID_FILE = 'long_ids.csv'   # Output file.
 LOG_FILENAME = 'log.txt'
 
 FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
