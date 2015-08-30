@@ -6,6 +6,7 @@ import re
 import sys
 import logging
 import requests
+import argparse
 from PIL import Image
 from captcha import Captcha
 from bs4 import BeautifulSoup
@@ -17,9 +18,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException
 
 
-CORES = 2
-SHORT_ID_FILE = 'short_ids.csv'   # Input file.
-LONG_ID_FILE = 'long_ids.csv'   # Output file.
+# CORES = 1
+# SHORT_ID_FILE = 'short_ids.csv'   # Input file.
+# LONG_ID_FILE = 'long_ids.csv'   # Output file.
 LOG_FILENAME = 'log.txt'
 
 FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
@@ -46,10 +47,9 @@ def short_ids(short_id_file):
     short_id_list = short_id_list
     return short_id_list
 
-def split_list(alist):
+def split_list(alist, wanted_parts):
     """Split a list of intervals in n parts in order to be
     multiprocessed."""
-    wanted_parts = CORES
     length = len(alist)
     return [alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
             for i in range(wanted_parts)]
@@ -226,7 +226,7 @@ def download_cv(driver, long_id):
     element = wait.until(EC.invisibility_of_element_located((By.ID,
                                                              captcha_locator)))
 
-def worker(short_id_list):
+def worker(short_id_list, long_id_file):
     """Given a list of short_ids it iterates over them to get the long_id."""
     pname = current_process().name
     logging.info('%s: Started', pname)
@@ -240,7 +240,7 @@ def worker(short_id_list):
                 'sometimes this happens, please try again. If this error '\
                 'persists check if the Browser version is compatible with '\
                 'selenium.')
-    output_file = open(LONG_ID_FILE, 'a')
+    output_file = open(long_id_file, 'a')
     for count, short_id in enumerate(short_id_list):
         while True:
             while True:
@@ -293,6 +293,8 @@ def worker(short_id_list):
                                  long_id)
                     output_file.write(short_id + ' | ' + long_id + '\n')
                     output_file.flush()
+                    print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
+                        pname, count+1, len(short_id_list), short_id, long_id)
                     while True:
                         try:
                             logging.info('%s- Downloading the CV for long_id:'\
@@ -312,19 +314,32 @@ def worker(short_id_list):
                                  len(short_id_list), short_id)
                     output_file.write(short_id + ' | NOTFOUND\n')
                     output_file.flush()
+                    print '{}-[{}/{}]=> short_id: {} | NOTFOUND'.format(
+                        pname, count+1, len(short_id_list), short_id)
                     break
     driver.close()
     display.stop()
 
-def main():
+def main(workers, i_file, o_file):
     """Main function, which controls the workflow of the program."""
-    short_id_list = short_ids(SHORT_ID_FILE)
-    splited_lists = split_list(short_id_list)
+    short_id_file = i_file
+    long_id_file = o_file
+    cores = workers
+    short_id_list = short_ids(short_id_file)
+    splited_lists = split_list(short_id_list, cores)
     for splited_list in range(len(splited_lists)):
-        temp = (splited_lists[splited_list],)
+        temp = (splited_lists[splited_list], long_id_file)
         process = Process(target=worker, args=temp)
         process.start()
 
 
 if __name__ == '__main__':
-    main()
+    PARSER = argparse.ArgumentParser()
+    PARSER.add_argument('-w', '--worker', dest='cores', required=True,
+                        type=int, help='number of workers to split the task.')
+    PARSER.add_argument('-i', '--input', dest='short_id_file', required=True,
+                        type=str, help='ShortIds file as input.')
+    PARSER.add_argument('-o', '--output', dest='long_id_file', required=True,
+                        type=str, help='LongIDs output file.')
+    ARGS = PARSER.parse_args()
+    main(ARGS.cores, ARGS.short_id_file, ARGS.long_id_file)
