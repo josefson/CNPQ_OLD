@@ -19,10 +19,10 @@ from selenium.common.exceptions import WebDriverException
 
 
 LOG_FILENAME = 'log.txt'
-
 FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
-logging.getLogger("requests").setLevel(logging.WARNING)
 logging.basicConfig(format=FORMAT, filename=LOG_FILENAME, level=logging.INFO)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 def short_ids(short_id_file):
     """This function expects a short_id file and returns a list with all
