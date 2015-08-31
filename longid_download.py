@@ -74,7 +74,10 @@ def verify_page(page_req):
     """Given a page request returns a match of which page it belongs to."""
     input_box_id = 'informado'
     cv_page_req_href = 'download'
-    not_found = '<title>Currículo não encontrado!</title>'
+    not_found = "<html><head><title>Curr\xedculo n\xe3o encontrado!</title>"\
+                "</head><body><div style='font-family:Arial;font-size=10pt;"\
+                "align:center;color:red;font-weight:bold'>Curr\xedculo n\xe3"\
+                "o encontrado</div></body></html>"
     content = page_req.content
     soup = BeautifulSoup(content, 'lxml')
     if soup.find(id=input_box_id):
@@ -82,8 +85,7 @@ def verify_page(page_req):
     elif soup.find(href=re.compile(cv_page_req_href)):
         return 'CVPAGE'
     else:
-        title = soup.find('title').encode('utf-8')
-        if title == not_found:
+        if content == not_found:
             return 'NOTFOUND'
 
 def scrap_long_id(cv_page_req):
