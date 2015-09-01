@@ -147,6 +147,7 @@ def download_cv(driver, long_id):
 
 def worker(short_id_list, long_id_file):
     """Given a list of short_ids it iterates over them to get the long_id."""
+    os.nice(-20)
     pname = current_process().name
     logging.info('%s: Started', pname)
     try:
@@ -228,6 +229,7 @@ def main(workers, i_file, o_file):
         process.start()
 
 if __name__ == '__main__':
+    os.nice(-20)
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument('-w', '--worker', dest='cores', required=True,
                         type=int, help='number of workers to split the task.')
