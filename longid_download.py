@@ -57,19 +57,6 @@ def get_short_url(short_id):
                'visualizacv.do?id='
     return base_url + str(short_id)
 
-def print_request(request):
-    """Print a request state for debugging purposes."""
-    for header in request.request.headers:
-        print '      {} : {}'.format(header, request.request.headers[header])
-    for cookie in request.cookies:
-        print cookie
-
-def save(request, file_name, mode):
-    """Save a request.content into a file for debugging purposes."""
-    temp_file = open(file_name, mode)
-    temp_file.write(request.content)
-    temp_file.close()
-
 def verify_page(page_req):
     """Given a page request returns a match of which page it belongs to."""
     input_box_id = 'informado'
@@ -114,83 +101,6 @@ def crack_captcha(driver):
     image = image.crop((left, top, right, bottom))
     image.save(captcha_ss)
     return Captcha(captcha_ss).get_text().upper()
-
-def captcha_page(short_id):
-    """Given a short_id, this function returns a request result of the
-    captcha_page."""
-    short_url = 'http://buscatextual.cnpq.br/buscatextual/download.do?'
-    params = {'id' : short_id}
-    cap_page_req = requests.get(short_url, params=params)
-    return cap_page_req
-
-def captcha_image(short_url):
-    """Given a Referer=short_id_url this function returns the resulting request
-    of the captcha image, which contains the captcha to be solved and its
-    session attributes to be persisted through the requests."""
-    captcha_url = 'http://buscatextual.cnpq.br/buscatextual/servlet/captcha?'
-    headers = {}
-    headers['Referer'] = short_url
-    headers['fontSize'] = '10'
-    headers['imp'] = 'cnpqrestritos'
-    headers['idioma'] = 'PT'
-    params = {'metodo' : 'getImagemCaptcha'}
-    cap_img_req = requests.get(captcha_url, params=params, headers=headers)
-    return cap_img_req
-
-def inform_captcha(cap_img_req, captcha_code):
-    """Given a previous session request and a referer."""
-    inform_url = 'http://buscatextual.cnpq.br/buscatextual/servlet/captcha?'
-    headers = cap_img_req.request.headers
-    headers['X-Requested-With'] = 'XMLHttpRequest'
-    headers['Referer'] = cap_img_req.request.headers['Referer']
-    cookies = cap_img_req.cookies
-    params = {'informado' : captcha_code, 'metodo' : 'validaCaptcha'}
-    informed_cap_req = requests.get(inform_url, cookies=cookies,
-                                    params=params, headers=headers)
-    return informed_cap_req
-
-def post_do(inf_cap_req):
-    """Given a previous session request this function performs some kind of an
-    obscure post validation which allow us to only then visualize the
-    curriculum in the next request."""
-    post_url = 'http://buscatextual.cnpq.br/buscatextual/visualizacv.do'
-    short_id = inf_cap_req.request.headers['Referer'][-10:]
-    headers = {}
-    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;'\
-                        'q=0.9,*/*;q=0.8'
-    headers['Accept-Encoding'] = 'gzip, deflate'
-    headers['Accept-Language'] = 'en-US,en;q=0.5'
-    headers['Connection'] = 'keep-alive'
-    headers['Cookie'] = inf_cap_req.request.headers['Cookie']
-    headers['DNT'] = '1'
-    headers['Host'] = 'buscatextual.cnpq.br'
-    headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; '\
-                            'rv:35.0) Gecko/20100101 Firefox/35.0'
-    # headers['Referer'] = referer
-    headers['Referer'] = inf_cap_req.request.headers['Referer']
-    headers['Content-Length'] = '999'
-    headers['Cookie'] = inf_cap_req.request.headers['Cookie']
-    # cookies = inf_cap_req.cookies   # Necessary.
-    files = {'metodo' : (None, 'visualizarCV'), 'id' : (None, short_id),
-             'idiomaExibicao' : (None, ''), 'tipo' : (None, ''),
-             'informado' : (None, '')}
-    requests.post(post_url, headers=headers, files=files)
-
-def cv_view(inf_cap_req):
-    """Given a previous session request it gets and returns the cv page."""
-    referer = inf_cap_req.request.headers['Referer']
-    view_url = referer
-    headers = {}
-    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q='\
-                        '0.9,*/*;q=0.8'
-    headers['Accept-Encoding'] = 'gzip, deflate'
-    headers['Accept-Language'] = 'en-US,en;q=0.5'
-    headers['Connection'] = 'keep-alive'
-    headers['Cookie'] = inf_cap_req.request.headers['Cookie']
-    headers['Host'] = 'buscatextual.cnpq.br'
-    headers['Referer'] = inf_cap_req.request.headers['Referer']
-    cv_request = requests.get(view_url, headers=headers)
-    return cv_request
 
 def download_cv(driver, long_id):
     """Given a selenium webdriver and a long_id, it downloads the related xml
@@ -242,49 +152,12 @@ def worker(short_id_list, long_id_file):
     output_file = open(long_id_file, 'a')
     for count, short_id in enumerate(short_id_list):
         while True:
-            while True:
-                try:
-                    logging.info('%s- Getting captcha and session for CVPAGE',
-                                 pname)
-                    img_req = captcha_image(get_short_url(short_id))
-                    break
-                except requests.exceptions.Timeout as terror:
-                    logging.info('%s-[Loop-%s]=> Timeout: %s\nTrying again...',
-                                 pname, count+1, terror)
-                    continue
-                except requests.exceptions.ConnectionError as cerror:
-                    logging.info('%s-[Loop-%s]=> Connection Error: %s\nTrying '
-                                 'again...', pname, count+1, cerror)
-                    continue
-                except requests.exceptions.RequestException as rerror:
-                    logging.info('%s-[Loop-%s]=> Request Error: %s\nTrying '
-                                 'again...', pname, count+1, rerror)
-                    continue
-            image_name = 'temp_' + pname + '.png'
-            open(image_name, 'wb').write(img_req.content)
-            code = Captcha(image_name).get_text().upper()
-            if len(code) != 4:
-                logging.info('%s- Wrong code length: %s', pname, code)
-                continue
-            elif len(code) == 4:
-                logging.info('%s- Right code length: %s', pname, code)
-                try:
-                    inf_req = inform_captcha(img_req, code)
-                    post_do(inf_req)
-                    cv_req = cv_view(inf_req)
-                except requests.exceptions.Timeout as terror:
-                    logging.info('%s-[Loop-%s]=> Timeout: %s\nTrying again...',
-                                 pname, count+1, terror)
-                    continue
-                except requests.exceptions.ConnectionError as cerror:
-                    logging.info('%s-[Loop-%s]=> Connection Error: %s\nTrying '
-                                 'again...', pname, count+1, cerror)
-                    continue
-                except requests.exceptions.RequestException as rerror:
-                    logging.info('%s-[Loop-%s]=> Request Error: %s\nTrying '
-                                 'again...', pname, count+1, rerror)
-                    continue
-                if verify_page(cv_req) == 'CVPAGE':
+            try:
+                logging.info('%s- Getting CVPAGE for shortid: %s',
+                             pname, short_id)
+                cv_req = requests.get(get_short_url(short_id))
+                page = verify_page(cv_req)
+                if page == 'CVPAGE':
                     logging.info('%s- Inside CVPAGE, scraping long_id', pname)
                     long_id = scrap_long_id(cv_req)
                     logging.info('%s-[%s/%s]=> short_id: %s | long_id: %s',
@@ -307,7 +180,7 @@ def worker(short_id_list, long_id_file):
                                          pname)
                             continue
                     break
-                elif verify_page(cv_req) == 'NOTFOUND':
+                elif page == 'NOTFOUND':
                     logging.info('%s-[%s/%s]=> short_id: %s | long_id: '\
                                  'NOTFOUND', pname, count+1,
                                  len(short_id_list), short_id)
@@ -316,6 +189,18 @@ def worker(short_id_list, long_id_file):
                     print '{}-[{}/{}]=> short_id: {} | NOTFOUND'.format(
                         pname, count+1, len(short_id_list), short_id)
                     break
+            except requests.exceptions.Timeout as terror:
+                logging.info('%s-[Loop-%s]=> Timeout: %s\nTrying again...',
+                             pname, count+1, terror)
+                continue
+            except requests.exceptions.ConnectionError as cerror:
+                logging.info('%s-[Loop-%s]=> Connection Error: %s\nTrying '
+                             'again...', pname, count+1, cerror)
+                continue
+            except requests.exceptions.RequestException as rerror:
+                logging.info('%s-[Loop-%s]=> Request Error: %s\nTrying '
+                             'again...', pname, count+1, rerror)
+                continue
     driver.close()
     display.stop()
 
