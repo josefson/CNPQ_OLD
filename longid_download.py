@@ -3,7 +3,9 @@
 This file is responsible to download the curriculum xml
 """
 import re
+import os
 import sys
+import glob
 import logging
 import requests
 import argparse
@@ -50,6 +52,14 @@ def split_list(alist, wanted_parts):
     length = len(alist)
     return [alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
             for i in range(wanted_parts)]
+
+def cleanup(pnumber):
+    """This function will clean temporary files created by a process, given a
+    process number."""
+    trash = glob.glob('*' + str(pnumber) + '.png')
+    if trash:
+        for i in trash:
+            os.remove(i)
 
 def get_short_url(short_id):
     """Returns a short_url for a given short_id."""
@@ -203,6 +213,7 @@ def worker(short_id_list, long_id_file):
                 continue
     driver.close()
     display.stop()
+    cleanup(pname[-1])
 
 def main(workers, i_file, o_file):
     """Main function, which controls the workflow of the program."""
@@ -215,7 +226,6 @@ def main(workers, i_file, o_file):
         temp = (splited_lists[splited_list], long_id_file)
         process = Process(target=worker, args=temp)
         process.start()
-
 
 if __name__ == '__main__':
     PARSER = argparse.ArgumentParser()

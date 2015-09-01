@@ -1,6 +1,7 @@
 """
 Module responsible to solve the captcha inside an image.
 """
+import os
 import glob
 from PIL import Image
 from PIL import ImageChops
@@ -80,7 +81,7 @@ class Captcha(object):
 
     def crack(self):
         """Iterate over the symbol library trying to match symbols."""
-        self.image.save('test.png')
+        self.image.save('temp.png')
         height = self.image.height
         characters = []
         for symbol in self.symbols:
@@ -92,6 +93,8 @@ class Captcha(object):
                     break
         characters = sorted(characters, key=itemgetter(1))
         self.characters = characters
+        for temp in glob.glob('temp.png'):
+            os.remove(temp)
 
     def get_text(self):
         """Return a captcha code."""
