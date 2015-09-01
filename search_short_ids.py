@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This module holds functions capable of scrap resuling shortIds of a query into
 the lattes curriculum database. It is known that we need those shortIds in
@@ -7,12 +8,11 @@ import re
 import time
 import datetime
 import requests
+import argparse
 from bs4 import BeautifulSoup
 from multiprocessing import Process, current_process
 
 
-CORES = 2   # Number of processes to split the task into workers.
-SHORT_ID_FILE = 'mydata.csv'
 INTERVAL = 1000   # results per page.
 
 def split_list(alist, wanted_parts=1):
@@ -61,11 +61,11 @@ def pagination():
     pages = range(0, total, INTERVAL)
     return pages
 
-def worker(page_list):
+def worker(page_list, short_id_file):
     """This is the function to be multiprocessed. It iterates over a list of
     pagigation values, requesting, scraping the shortIds of each
     result in its html, and writing it inside an external data file."""
-    data = open(SHORT_ID_FILE, 'a')
+    data = open(short_id_file, 'a')
     pname = current_process().name
     start = time.time()
     time_stamp = datetime.datetime.fromtimestamp(start).strftime('%Y-%m-%d %H:%M:%S')
@@ -81,15 +81,23 @@ def worker(page_list):
     time_stamp = datetime.datetime.fromtimestamp(end).strftime('%Y-%m-%d %H:%M:%S')
     print '{}- {}'.format(pname, time_stamp)
 
-def main():
+def main(workers, o_file):
     """Main function, which controls the workflow of the program."""
+    cores = workers
+    short_id_file = o_file
     pages = pagination()
-    pages_core = split_list(pages, wanted_parts=CORES)
+    pages_core = split_list(pages, wanted_parts=cores)
     for i in range(len(pages_core)):
-        temp = (pages_core[i],)
+        temp = (pages_core[i], short_id_file,)
         process = Process(target=worker, args=temp)
         process.start()
 
 
 if __name__ == '__main__':
-    main()
+    PARSER = argparse.ArgumentParser()
+    PARSER.add_argument('-w', '--worker', dest='cores', required=True,
+                        type=int, help='number of workers to split the task.')
+    PARSER.add_argument('-o', '--output', dest='short_id_file', required=True,
+                        type=str, help='ShortIDs output file.')
+    ARGS = PARSER.parse_args()
+    main(ARGS.cores, ARGS.short_id_file)
