@@ -76,6 +76,7 @@ def worker(page_list, short_id_file):
         for researcher in researchers:
             if len(researcher) > 0:
                 data.write('{}\n'.format(researcher[0]))
+                data.flush()
     data.close()
     end = time.time()
     time_stamp = datetime.datetime.fromtimestamp(end).strftime('%Y-%m-%d %H:%M:%S')
