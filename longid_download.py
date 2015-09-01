@@ -224,7 +224,7 @@ def main(workers, i_file, o_file):
     short_id_list = short_ids(short_id_file)
     splited_lists = split_list(short_id_list, cores)
     for splited_list in range(len(splited_lists)):
-        temp = (splited_lists[splited_list], long_id_file)
+        temp = (splited_lists[splited_list], long_id_file,)
         process = Process(target=worker, args=temp)
         process.start()
 
