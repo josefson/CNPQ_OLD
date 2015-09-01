@@ -5,6 +5,7 @@ This file is responsible to download the curriculum xml
 import re
 import os
 import sys
+import pdb
 import glob
 import logging
 import requests
@@ -40,6 +41,7 @@ def short_ids(short_id_file):
                 invalid_ids.append(short_id)
     print 'Total of IDs in the file: {}.'.format(
         len(short_id_list) + len(invalid_ids))
+    pdb.set_trace()
     print 'InvalidIDs: {}'.format(len(invalid_ids))
     print 'Valid IDs to downlaod: {}'.format(len(short_id_list))
     data_file.close()
@@ -176,7 +178,7 @@ def worker(short_id_list, long_id_file):
                                  long_id)
                     output_file.write(short_id + ' | ' + long_id + '\n')
                     output_file.flush()
-                    print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
+                    # print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
                         pname, count+1, len(short_id_list), short_id, long_id)
                     while True:
                         try:
