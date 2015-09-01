@@ -178,7 +178,7 @@ def worker(short_id_list, long_id_file):
                                  long_id)
                     output_file.write(short_id + ' | ' + long_id + '\n')
                     output_file.flush()
-                    print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
+                    # print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
                         pname, count+1, len(short_id_list), short_id, long_id)
                     while True:
                         try:
