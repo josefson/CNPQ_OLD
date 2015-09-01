@@ -41,7 +41,6 @@ def short_ids(short_id_file):
                 invalid_ids.append(short_id)
     print 'Total of IDs in the file: {}.'.format(
         len(short_id_list) + len(invalid_ids))
-    pdb.set_trace()
     print 'InvalidIDs: {}'.format(len(invalid_ids))
     print 'Valid IDs to downlaod: {}'.format(len(short_id_list))
     data_file.close()
