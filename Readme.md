@@ -56,8 +56,23 @@ python longid_download.py -h/--help for more information
 * Do the download step with the requests library if possible.
 * Port to OSX and maybe to Windows
 
-## Thanks
+## Backers
+
+### Maintainers
+
+Only myself at the current time: 
+
+- Josefson Fraga Souza (https://github.com/josefson)
+
+### Sponsors
+
+No sponsors yet! Will you be the first?
+[![PayPayl donate button](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4CVXEEYSZU7J8 "Donate once-off to this project using Paypal")
+
+### Thanks
+
 Special thanks to my friend Bruno Duarte that guided me in the way how images work.
+
 
 
 ## LICENSE
