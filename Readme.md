@@ -7,6 +7,7 @@ The problem was broken into 3 parts, which are necessary for getting the final o
 2. Once we have the short_ids, we will iterate over them requesting the curriculum visualization. This will result in a captcha page, which the software will solve, get the visualzation page and scrap the long_id out of its html attributes.
 3. Only with a long_id we can get the downlaod links for each curriculum. Here a new captcha will be presented and the software will take care of it to.
 
+
 ## Requirements
 Python 2.7.X
 
@@ -41,20 +42,46 @@ python search_short_ids.py -h/--help for more information
 Then longid_download.py [-h] -w CORES -i SHORT_ID_FILE -o LONG_ID_FILE
 ```
 python longid_download.py -w 2 -i my_shortID_file.csv -o my_longID_output.csv
-Process-1-[2/50]=> short_id: K4130902J7  |  long_id: 2253022128647589
-Process-2-[2/50]=> short_id: K4133392U6  |  long_id: 0449582690670596
-Process-1-[3/50]=> short_id: K4130301E5  |  long_id: 7397201484989375
-Process-2-[3/50]=> short_id: K4131812T0  |  long_id: 2222910728338238
-Process-1-[4/50]=> short_id: K4138503E6  |  long_id: 1156552473591486
+This will be written in your output file:
+short_id: K4130902J7  |  long_id: 2253022128647589
+short_id: K4133392U6  |  long_id: 0449582690670596
+short_id: K4130301E5  |  long_id: 7397201484989375
+short_id: K4131812T0  |  long_id: 2222910728338238
+short_id: K4138503E6  |  long_id: 1156552473591486
 ...
-see zips in xmls folder
+See the compacted files in xmls folder.
+There is also a log.txt where you can tail -f and see the progress.
+Any error should be printed at the terminal window which the process was initiated.
 python longid_download.py -h/--help for more information
 ```
 
-## To Do
-* Pass arguments through commandline.
-* Do the download step with the requests library if possible.
-* Port to OSX and maybe to Windows
+
+## Installation
+
+### Linux
+Most of the libraries you can get with the pip command:
+```
+pip install <library-name>
+```
+The lxml library you can get through your package manager:
+```
+apt-get install python-lxml
+```
+You will also have to install the Xvfb:
+```
+apt-get install xvfb
+```
+Make sure to have a firefox version compatible with selenium. If you need to download an old one, search google for guidance.
+Try firefox --version at the terminal window to make sure the firefox command is binded to the compatible version.
+
+### OSX
+All libraries can be installed trhough pip, including the lxml library:
+```
+pip install <library-name>
+```
+You can install the Xvfb package with Quartz, if i am not mistaken.
+Make sure to have a firefox version compatible with selenium. If you need to download an old one, search google for guidance.
+
 
 ## Backers
 
@@ -64,16 +91,19 @@ Only myself at the current time:
 
 - Josefson Fraga Souza (https://github.com/josefson)
 
+### Thanks
+
+Special thanks to my friend Bruno Duarte that guided me in the way how images work.
+
 ### Sponsors
 
 No sponsors yet! Will you be the first?
 
 [![PayPayl donate button](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WA7DVSWHPZLBE "Donate to this project using Paypal")
 
-### Thanks
 
-Special thanks to my friend Bruno Duarte that guided me in the way how images work.
-
+## To Do
+* Do the download step with the requests library if possible.
 
 
 ## LICENSE
