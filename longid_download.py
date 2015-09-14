@@ -5,7 +5,6 @@ This file is responsible to download the curriculum xml
 import re
 import os
 import sys
-import pdb
 import glob
 import logging
 import requests
@@ -13,6 +12,7 @@ import argparse
 from PIL import Image
 from captcha import Captcha
 from bs4 import BeautifulSoup
+from util import getUserAgent
 from driver import LattesDriver
 from selenium.webdriver.common.by import By
 from multiprocessing import Process, current_process
@@ -41,7 +41,6 @@ def short_ids(short_id_file):
                 invalid_ids.append(short_id)
     print 'Total of IDs in the file: {}.'.format(
         len(short_id_list) + len(invalid_ids))
-    pdb.set_trace()
     print 'InvalidIDs: {}'.format(len(invalid_ids))
     print 'Valid IDs to downlaod: {}'.format(len(short_id_list))
     data_file.close()
@@ -168,7 +167,9 @@ def worker(short_id_list, long_id_file):
             try:
                 logging.info('%s- Getting CVPAGE for shortid: %s',
                              pname, short_id)
-                cv_req = requests.get(get_short_url(short_id))
+                headers = {}
+                headers['User-Agent'] = getUserAgent()
+                cv_req = requests.get(get_short_url(short_id), headers=headers)
                 page = verify_page(cv_req)
                 if page == 'CVPAGE':
                     logging.info('%s- Inside CVPAGE, scraping long_id', pname)
@@ -179,7 +180,7 @@ def worker(short_id_list, long_id_file):
                     output_file.write(short_id + ' | ' + long_id + '\n')
                     output_file.flush()
                     # print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
-                        pname, count+1, len(short_id_list), short_id, long_id)
+                    #     pname, count+1, len(short_id_list), short_id, long_id)
                     while True:
                         try:
                             logging.info('%s- Downloading the CV for long_id:'\
