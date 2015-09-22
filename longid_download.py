@@ -199,7 +199,7 @@ def worker(short_id_list, long_id_file):
                             logging.info('%s- Download finished!', pname)
                             break
                         except Exception, derror:
-                            logging.info('%s- Download failed. Trying again',
+                            logging.info('%s- Download failed. Trying again...',
                                          pname)
                             continue
                     break
