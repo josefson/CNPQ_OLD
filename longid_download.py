@@ -27,6 +27,7 @@ logging.basicConfig(format=FORMAT, filename=LOG_FILENAME, level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
+
 def short_ids(short_id_file):
     """This function expects a short_id file and returns a list with all
     short_ids."""
@@ -47,12 +48,14 @@ def short_ids(short_id_file):
     short_id_list = short_id_list
     return short_id_list
 
+
 def split_list(alist, wanted_parts):
     """Split a list of intervals in n parts in order to be
     multiprocessed."""
     length = len(alist)
     return [alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
             for i in range(wanted_parts)]
+
 
 def cleanup(pnumber):
     """This function will clean temporary files created by a process, given a
@@ -62,11 +65,13 @@ def cleanup(pnumber):
         for i in trash:
             os.remove(i)
 
+
 def get_short_url(short_id):
     """Returns a short_url for a given short_id."""
     base_url = 'http://buscatextual.cnpq.br/buscatextual/'\
                'visualizacv.do?id='
     return base_url + str(short_id)
+
 
 def verify_page(page_req):
     """Given a page request returns a match of which page it belongs to."""
@@ -86,6 +91,7 @@ def verify_page(page_req):
         if content == not_found:
             return 'NOTFOUND'
 
+
 def scrap_long_id(cv_page_req):
     """Given a request from the CVPAGE it scraps and returns a long_id."""
     source = cv_page_req.content
@@ -93,6 +99,7 @@ def scrap_long_id(cv_page_req):
     link = soup.find(href=re.compile(r'(\d{16})'))
     long_id = re.search(r'(\d{16})', str(link)).group(1)
     return long_id
+
 
 def crack_captcha(driver):
     """Given a driver inside a captcha page, cracks the captcha and returns
@@ -113,6 +120,7 @@ def crack_captcha(driver):
     image.save(captcha_ss)
     return Captcha(captcha_ss).get_text().upper()
 
+
 def download_cv(driver, long_id):
     """Given a selenium webdriver and a long_id, it downloads the related xml
     curriculum."""
@@ -131,7 +139,7 @@ def download_cv(driver, long_id):
         logging.info('%s-download_cv: Cracking captcha...', pname)
         code = crack_captcha(driver)
         if len(code) != 4:
-            logging.info('%s-download_cv: Wrong captcha length: %s. Trying '\
+            logging.info('%s-download_cv: Wrong captcha length: %s. Trying '
                          'again...', pname, code)
             continue
         if len(code) == 4:
@@ -146,6 +154,7 @@ def download_cv(driver, long_id):
     element = wait.until(EC.invisibility_of_element_located((By.ID,
                                                              captcha_locator)))
 
+
 def worker(short_id_list, long_id_file):
     """Given a list of short_ids it iterates over them to get the long_id."""
     os.nice(-20)
@@ -157,10 +166,10 @@ def worker(short_id_list, long_id_file):
         driver = lattesdriver.get_driver()
     except WebDriverException, error:
         print error
-        sys.exit('Failed to initialize selenium drivers. Calm down, '\
-                'sometimes this happens, please try again. If this error '\
-                'persists check if the Browser version is compatible with '\
-                'selenium.')
+        sys.exit('Failed to initialize selenium drivers. Calm down, '
+                 'sometimes this happens, please try again. If this error '
+                 'persists check if the Browser version is compatible with '
+                 'selenium.')
     output_file = open(long_id_file, 'a')
     for count, short_id in enumerate(short_id_list):
         while True:
@@ -180,21 +189,22 @@ def worker(short_id_list, long_id_file):
                     output_file.write(short_id + ' | ' + long_id + '\n')
                     output_file.flush()
                     # print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
-                    #     pname, count+1, len(short_id_list), short_id, long_id)
+                    #     pname, count+1, len(short_id_list), short_id,
+                    #     long_id)
                     while True:
                         try:
-                            logging.info('%s- Downloading the CV for long_id:'\
+                            logging.info('%s- Downloading the CV for long_id:'
                                          ' %s', pname, long_id)
                             download_cv(driver, long_id)
                             logging.info('%s- Download finished!', pname)
                             break
                         except Exception, derror:
-                            logging.info('%s- Download failed. Trying again',
-                                         pname)
+                            logging.info('%s- Download failed. Error: %s.'
+                                         '\nTrying again', pname, derror)
                             continue
                     break
                 elif page == 'NOTFOUND':
-                    logging.info('%s-[%s/%s]=> short_id: %s | long_id: '\
+                    logging.info('%s-[%s/%s]=> short_id: %s | long_id: '
                                  'NOTFOUND', pname, count+1,
                                  len(short_id_list), short_id)
                     output_file.write(short_id + ' | NOTFOUND\n')
@@ -217,6 +227,7 @@ def worker(short_id_list, long_id_file):
     driver.close()
     display.stop()
     cleanup(pname[-1])
+
 
 def main(workers, i_file, o_file):
     """Main function, which controls the workflow of the program."""
