@@ -21,11 +21,21 @@ Python libraries necessary:
 * selenium
 * pyvirtualdisplay
 * Pillow
+* fake-useragent
 
 Once all the pre-requirements are met just run it and wait:
 1st We scrap all shortIDs saving them in the output file.
 ```
-python search_short_ids.py -w 2 -o shortIDs.csv
+usage: search_short_ids.py [-h] -w CORES -o SHORT_ID_FILE
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -w CORES, --worker CORES
+                        number of workers to split the task.
+  -o SHORT_ID_FILE, --output SHORT_ID_FILE
+                        ShortIDs output file.
+
+python search_short_ids.py -w 2 -o short_ids.csv
 Total of registers: 4315593
 Process-1- 2015-08-24 20:07:20
 Process-2- 2015-08-24 20:07:20
@@ -36,11 +46,28 @@ Process-1- Scrapping from 1000 to 2000 registers
 Process-2- Scrapping from 2160000 to 2161000 registers
 Process-1- Scrapping from 2000 to 3000 registers
 ...
-python search_short_ids.py -h/--help for more information
 ```
-Then longid_download.py [-h] -w CORES -i SHORT_ID_FILE -o LONG_ID_FILE
+Then longid_download.py -w WORKERS -i SHORT_ID_FILE -o LONG_ID_FILE
 ```
-python longid_download.py -w 2 -i my_shortID_file.csv -o my_longID_output.csv
+python longid_download.py -h/--help for more information
+usage: longid_download.py [-h] -w CORES -i SHORT_ID_FILE -o LONG_ID_FILE [-v]
+optional arguments:
+    -h, --help          show this help message and exit
+    -w CORES, --worker CORES
+                        Required: Number of workers to split the task into
+                        processes. This is done in order to get a higher cpu
+                        time.
+    -i SHORT_ID_FILE, --input SHORT_ID_FILE
+                        Required: A input file filled with short_ids separated
+                        by new-line-characters.
+    -o LONG_ID_FILE, --output LONG_ID_FILE
+                        Required: A output file to be writen with long_idsa.
+                        Since long_ids are the Primary Keys, those could be
+                        useful in the future.
+    -v, --verbose       Optional: Allow you to see the scrap/download
+                        progress.
+
+python longid_download.py -v -w 2 -i my_shortID_file.csv -o my_longID_output.csv
 Process-1-[2/50]=> short_id: K4130902J7  |  long_id: 2253022128647589
 Process-2-[2/50]=> short_id: K4133392U6  |  long_id: 0449582690670596
 Process-1-[3/50]=> short_id: K4130301E5  |  long_id: 7397201484989375
@@ -48,13 +75,20 @@ Process-2-[3/50]=> short_id: K4131812T0  |  long_id: 2222910728338238
 Process-1-[4/50]=> short_id: K4138503E6  |  long_id: 1156552473591486
 ...
 see zips in xmls folder
-python longid_download.py -h/--help for more information
 ```
 
+## sudo
+Unfortunatly in order to get more cpu time, for performance reasons, it was added
+code that will set the niceness of each worker. To do such a thing it had to be 
+used sudo privileges, since only a sudoer user can use the unix nice() feature.
+So, you should inspect the code and feel if you are confortable with this design 
+decision or not, since i am not to be held responsable for any problems that may 
+inflict you or your enviroment.
+
 ## To Do
-* Pass arguments through commandline.
 * Do the download step with the requests library if possible.
-* Port to OSX and maybe to Windows
+* Find a way to set niceness without sudo privileges.
+* Port to Windows.
 
 ## Thanks
 Special thanks to my friend Bruno Duarte that guided me in the way how images work.
