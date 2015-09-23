@@ -12,13 +12,13 @@ import argparse
 from PIL import Image
 from captcha import Captcha
 from bs4 import BeautifulSoup
-from util import getUserAgent
 from driver import LattesDriver
+from fake_useragent import UserAgent
 from selenium.webdriver.common.by import By
 from multiprocessing import Process, current_process
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.support import expected_conditions as EC
 
 
 LOG_FILENAME = 'log.txt'
@@ -143,22 +143,30 @@ def download_cv(driver, long_id):
                          'again...', pname, code)
             continue
         if len(code) == 4:
-            logging.info('%s-download_cv: Right captcha: %s', pname, code)
-            break
-    logging.info('%s-download_cv: Entering captcha: %s', pname, code)
-    element = driver.find_element(By.ID, input_locator)
-    element.clear()
-    element.send_keys(code + '\n')
-    logging.info('%s-download_cv: Waiting for download...', pname)
-    wait = WebDriverWait(driver, 10)
-    element = wait.until(EC.invisibility_of_element_located((By.ID,
-                                                             captcha_locator)))
+            logging.info('%s-download_cv: Right captcha, entering code: %s',
+                         pname, code)
+            element = driver.find_element(By.ID, input_locator)
+            element.clear()
+            element.send_keys(code + '\n')
+            logging.info('%s-download_cv: Waiting for download...', pname)
+            wait = WebDriverWait(driver, 2)
+            locator = (By.ID, captcha_locator)
+            condition = EC.invisibility_of_element_located(locator)
+            element = wait.until(condition)
+            if glob.glob('xmls/' + long_id + '*') != []:
+                logging.info('%s-download_cv: Download in file-system.', pname)
+                break
+            else:
+                logging.info('%s-download_cv: Download not in file-system. '
+                             'Trying again...', pname)
+                continue
 
 
-def worker(short_id_list, long_id_file):
+def worker(short_id_list, long_id_file, verbose):
     """Given a list of short_ids it iterates over them to get the long_id."""
     os.nice(-20)
     pname = current_process().name
+    user_agent = UserAgent(cache=False)
     logging.info('%s: Started', pname)
     try:
         lattesdriver = LattesDriver()
@@ -177,7 +185,7 @@ def worker(short_id_list, long_id_file):
                 logging.info('%s- Getting CVPAGE for shortid: %s',
                              pname, short_id)
                 headers = {}
-                headers['User-Agent'] = getUserAgent()
+                headers['User-Agent'] = user_agent.random
                 cv_req = requests.get(get_short_url(short_id), headers=headers)
                 page = verify_page(cv_req)
                 if page == 'CVPAGE':
@@ -188,9 +196,10 @@ def worker(short_id_list, long_id_file):
                                  long_id)
                     output_file.write(short_id + ' | ' + long_id + '\n')
                     output_file.flush()
-                    # print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
-                    #     pname, count+1, len(short_id_list), short_id,
-                    #     long_id)
+                    if verbose is True:
+                        print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
+                            pname, count+1, len(short_id_list), short_id,
+                            long_id)
                     while True:
                         try:
                             logging.info('%s- Downloading the CV for long_id:'
@@ -198,9 +207,9 @@ def worker(short_id_list, long_id_file):
                             download_cv(driver, long_id)
                             logging.info('%s- Download finished!', pname)
                             break
-                        except Exception, derror:
-                            logging.info('%s- Download failed. Trying again...',
-                                         pname)
+                        except:
+                            logging.info('%s- Download failed. '
+                                         'Trying again...', pname)
                             continue
                     break
                 elif page == 'NOTFOUND':
@@ -229,7 +238,7 @@ def worker(short_id_list, long_id_file):
     cleanup(pname[-1])
 
 
-def main(workers, i_file, o_file):
+def main(workers, i_file, o_file, verbose):
     """Main function, which controls the workflow of the program."""
     short_id_file = i_file
     long_id_file = o_file
@@ -237,7 +246,7 @@ def main(workers, i_file, o_file):
     short_id_list = short_ids(short_id_file)
     splited_lists = split_list(short_id_list, cores)
     for splited_list in range(len(splited_lists)):
-        temp = (splited_lists[splited_list], long_id_file)
+        temp = (splited_lists[splited_list], long_id_file, verbose)
         process = Process(target=worker, args=temp)
         process.start()
 
@@ -245,10 +254,18 @@ if __name__ == '__main__':
     os.nice(-20)
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument('-w', '--worker', dest='cores', required=True,
-                        type=int, help='number of workers to split the task.')
+                        type=int, help='Required: Number of workers to split '
+                        'the task into processes. This is done in order to '
+                        'get a higher cpu time.')
     PARSER.add_argument('-i', '--input', dest='short_id_file', required=True,
-                        type=str, help='ShortIds file as input.')
+                        type=str, help='Required: A input file filled with '
+                        'short_ids separated by new-line-characters.')
     PARSER.add_argument('-o', '--output', dest='long_id_file', required=True,
-                        type=str, help='LongIDs output file.')
+                        type=str, help='Required: A output file to be writen '
+                        'with long_idsa. Since long_ids are the Primary Keys'
+                        ', those could be useful in the future.')
+    PARSER.add_argument('-v', '--verbose', dest='verbose', action='store_true',
+                        default=False, help='Optional: Allow you to see the '
+                        'scrap/download progress.')
     ARGS = PARSER.parse_args()
-    main(ARGS.cores, ARGS.short_id_file, ARGS.long_id_file)
+    main(ARGS.cores, ARGS.short_id_file, ARGS.long_id_file, ARGS.verbose)
