@@ -16,8 +16,8 @@ class LattesDriver(object):
         self.profile.set_preference("browser.download.folderList", 2)
         self.profile.set_preference("browser.download.dir",
                                     os.getcwd() + '/xmls/')
-        self.profile.set_preference("browser.download.manager.showWhenStarting",
-                                    False)
+        self.profile.set_preference("browser.download.manager.\
+                                    showWhenStarting", False)
         self.profile.set_preference("browser.helperApps.alwaysAsk.force",
                                     False)
         self.profile.set_preference("browser.helperApps.neverAsk.saveToDisk",
