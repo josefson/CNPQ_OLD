@@ -4,25 +4,19 @@ This file is responsible to download the curriculum xml
 """
 import re
 import os
-import sys
 import glob
 import logging
 import requests
 import argparse
-from PIL import Image
 from captcha import Captcha
 from bs4 import BeautifulSoup
-from driver import LattesDriver
 from fake_useragent import UserAgent
-from selenium.webdriver.common.by import By
 from multiprocessing import Process, current_process
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.support import expected_conditions as EC
 
 
 LOG_FILENAME = 'log.txt'
 FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+USER_AGENT = UserAgent(cache=False)
 logging.basicConfig(format=FORMAT, filename=LOG_FILENAME, level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -73,6 +67,202 @@ def get_short_url(short_id):
     return base_url + str(short_id)
 
 
+def get_long_url(long_id):
+    """Returns a long_url for a given long_id."""
+    base_url = 'http://buscatextual.cnpq.br/buscatextual/download.do?metodo='\
+               'apresentar&idcnpq='
+    return base_url + str(long_id)
+
+
+def captcha_page(session, referer, pname):
+    """Takes a Session and long_id and retrieves a captcha.png file to be
+    processed. Returning the cracked code for its caller."""
+    captcha_url = 'http://buscatextual.cnpq.br/buscatextual/servlet/captcha?'\
+                  'metodo=getImagemCaptcha'
+    headers = {}
+    headers['Accept'] = 'image/png,image/*;q=0.8,*/*;q=0.5'
+    headers['Accept-Encoding'] = 'gzip, deflate'
+    headers['Accept-Language'] = 'en-US,en;q=0.5'
+    headers['Connection'] = 'keep-alive'
+    headers['DNT'] = '1'
+    headers['Host'] = 'buscatextual.cnpq.br'
+    headers['Referer'] = referer
+    headers['User-Agent'] = USER_AGENT.random
+    img_name = 'captcha_' + current_process().name + '.png'
+    while True:
+        try:
+            logging.info('%s-captcha_page: Getting captcha page.', pname)
+            req = session.get(captcha_url, headers=headers)
+        except requests.exceptions.Timeout as terror:
+            logging.info('%s-captcha_page: Timeout: %s\nTrying again...',
+                         pname, terror)
+            continue
+        except requests.exceptions.ConnectionError as cerror:
+            logging.info('%s-captcha_page: Connection Error: %s\nTrying '
+                         'again...', pname, cerror)
+            continue
+        except requests.exceptions.RequestException as rerror:
+            logging.info('%s-captcha_page: Request Error: %s\nTrying '
+                         'again...', pname, rerror)
+            continue
+        open(img_name, 'wb').write(req.content)
+        code = Captcha(img_name).get_text().upper()
+        if len(code) == 4:
+            logging.info('%s-captcha_page: Right captcha length: %s',
+                         pname, code)
+            return code
+
+
+def inform_captcha(session, url, referer, pname):
+    """Takes a Session, a lon."" and a cracked captcha code, it informs the
+    code to the server in order to get a success response."""
+    expected_content = '{"estado":"sucesso"}\r\n'
+    headers = {}
+    headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
+    headers['Accept-Encoding'] = 'gzip, deflate'
+    headers['Accept-Language'] = 'en-US,en;q=0.5'
+    headers['Connection'] = 'keep-alive'
+    headers['DNT'] = '1'
+    headers['Host'] = 'buscatextual.cnpq.br'
+    headers['Referer'] = referer
+    headers['User-Agent'] = USER_AGENT.random
+    headers['X-Requested-With'] = 'XMLHttpRequest'
+    while True:
+        try:
+            logging.info('%s-inform_captcha: Informing captcha for '
+                         'download.', pname)
+            req = session.get(url, headers=headers)
+        except requests.exceptions.Timeout as terror:
+            logging.info('%s-inform_captcha: Timeout: %s\nTrying '
+                         'again...', pname, terror)
+            continue
+        except requests.exceptions.ConnectionError as cerror:
+            logging.info('%s-inform_captcha: Connection Error: '
+                         '%s\nTrying again...', pname, cerror)
+            continue
+        except requests.exceptions.RequestException as rerror:
+            logging.info('%s-inform_captcha: Request Error: %s\n'
+                         'Trying again...', pname, rerror)
+            continue
+        if req.content == expected_content:
+            logging.info('%s-inform_captcha: Captcha informed with '
+                         'sucess.', pname)
+            return True
+        else:
+            logging.info('%s-inform_captcha: Captcha informed was '
+                         'wrong.', pname)
+            return False
+
+
+def post_cv(session, short_id, pname):
+    """This function is responsible to get the CVPAGE."""
+    post_url = 'http://buscatextual.cnpq.br/buscatextual/visualizacv.do'
+    headers = {}
+    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;'\
+                        'q=0.9,*/*;q=0.8'
+    headers['Accept-Encoding'] = 'gzip, deflate'
+    headers['Accept-Language'] = 'en-US,en;q=0.5'
+    headers['Connection'] = 'keep-alive'
+    headers['DNT'] = '1'
+    headers['Host'] = 'buscatextual.cnpq.br'
+    headers['Referer'] = 'http://buscatextual.cnpq.br/buscatextual/'\
+                         'visualizacv.do?id=' + short_id
+    headers['User-Agent'] = USER_AGENT.random
+    files = {'metodo': (None, 'captchaValido'), 'id': (None, short_id),
+             'idiomaExibicao': (None, ''), 'tipo': (None, ''),
+             'informado': (None, '')}
+    while True:
+        try:
+            req = session.post(post_url, files=files, headers=headers)
+            logging.info('%s-post_cv: Getting CVPAGE...', pname)
+            return req
+        except requests.exceptions.Timeout as terror:
+            logging.info('%s-post_cv: Timeout: %s\nTrying again...',
+                         pname, terror)
+            continue
+        except requests.exceptions.ConnectionError as cerror:
+            logging.info('%s-post_cv: Connection Error: %s\nTrying '
+                         'again...', pname, cerror)
+            continue
+        except requests.exceptions.RequestException as rerror:
+            logging.info('%s-post_cv: Request Error: %s\nTrying '
+                         'again...', pname, rerror)
+            continue
+
+
+def post_download(session, long_id, pname):
+    """This method is responsible for downloading the curriculum zip file."""
+    post_url = 'http://buscatextual.cnpq.br/buscatextual/download.do'
+    referer = 'http://buscatextual.cnpq.br/buscatextual/download.do?metodo='\
+              'apresentar&idcnpq=' + long_id
+    headers = {}
+    headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;'\
+                        'q=0.9,*/*;q=0.8'
+    headers['Accept-Encoding'] = 'gzip, deflate'
+    headers['Accept-Language'] = 'en-US,en;q=0.5'
+    headers['Connection'] = 'keep-alive'
+    headers['DNT'] = '1'
+    headers['Host'] = 'buscatextual.cnpq.br'
+    headers['Referer'] = referer
+    headers['User-Agent'] = USER_AGENT.random
+    files = {'metodo': (None, 'captchaValido'), 'idcnpq': (None, long_id),
+             'informado': (None, '')}
+    while True:
+        try:
+            req = session.post(post_url, files=files, headers=headers)
+            logging.info('%s-post_download: Downloading...', pname)
+        except requests.exceptions.Timeout as terror:
+            logging.info('%s-post_download: Timeout: %s\nTrying again...',
+                         pname, terror)
+            continue
+        except requests.exceptions.ConnectionError as cerror:
+            logging.info('%s-post_download: Connection Error: %s\nTrying '
+                         'again...', pname, cerror)
+            continue
+        except requests.exceptions.RequestException as rerror:
+            logging.info('%s-post_download: Request Error: %s\nTrying '
+                         'again...', pname, rerror)
+            continue
+        zip_name = 'xmls/' + long_id + '.zip'
+        open(zip_name, 'w').write(req.content)
+        if glob.glob('xmls/' + long_id + '*') != []:
+            logging.info('%s-post_download: Download in file-system.', pname)
+            break
+        else:
+            logging.info('%s-post_download: Download not in file-system. '
+                         'Trying again...', pname)
+            continue
+
+
+def download_curriculum(long_id, pname):
+    """This function is responsible for organize the download multi-step
+    requesting. And also to remove complexity of the worker function."""
+    session = requests.Session()
+    while True:
+        referer = get_long_url(long_id)
+        code = captcha_page(session, referer, pname)
+        inform_url = 'http://buscatextual.cnpq.br/buscatextual/servlet/'\
+                     'captcha?informado=' + code + '&metodo=validaCaptcha'
+        if inform_captcha(session, inform_url, referer, pname) is True:
+            break
+    post_download(session, long_id, pname)
+
+
+def get_cv_page(short_id, pname):
+    """This function control the workflux of how to get to the CVPAGE.
+    Returning a CVPAGE request object"""
+    session = requests.Session()
+    while True:
+        referer = get_short_url(short_id)
+        code = captcha_page(session, referer, pname)
+        inform_url = 'http://buscatextual.cnpq.br/buscatextual/servlet/'\
+                     'captcha?informado=' + code + '&id=' + short_id + \
+                     '&metodo=validaCaptcha'
+        if inform_captcha(session, inform_url, referer, pname) is True:
+            req = post_cv(session, short_id, pname)
+            return req
+
+
 def verify_page(page_req):
     """Given a page request returns a match of which page it belongs to."""
     input_box_id = 'informado'
@@ -101,83 +291,12 @@ def scrap_long_id(cv_page_req):
     return long_id
 
 
-def crack_captcha(driver):
-    """Given a driver inside a captcha page, cracks the captcha and returns
-    its value."""
-    captcha_locator = 'div_image_captcha'
-    element = driver.find_element(By.ID, captcha_locator)
-    location = element.location
-    size = element.size
-    page_ss = 'pageScreenShot_' + current_process().name + '.png'
-    captcha_ss = 'captcha_' + current_process().name + '.png'
-    driver.get_screenshot_as_file(page_ss)
-    image = Image.open(page_ss)
-    left = location['x'] + 2
-    top = location['y']
-    right = location['x'] + size['width']
-    bottom = location['y'] + size['height'] - 1
-    image = image.crop((left, top, right, bottom))
-    image.save(captcha_ss)
-    return Captcha(captcha_ss).get_text().upper()
-
-
-def download_cv(driver, long_id):
-    """Given a selenium webdriver and a long_id, it downloads the related xml
-    curriculum."""
-    pname = current_process().name
-    long_url = 'http://buscatextual.cnpq.br/buscatextual/download.do?metodo='\
-               'apresentar&idcnpq=' + long_id
-    input_locator = 'informado'
-    captcha_locator = 'image_captcha'
-    while True:
-        logging.info('%s-download_cv: Loading %s', pname, long_url)
-        driver.get(long_url)
-        logging.info('%s-download_cv: Locating captcha element...', pname)
-        wait = WebDriverWait(driver, 10)
-        element = wait.until(EC.presence_of_element_located((By.ID,
-                                                             captcha_locator)))
-        logging.info('%s-download_cv: Cracking captcha...', pname)
-        code = crack_captcha(driver)
-        if len(code) != 4:
-            logging.info('%s-download_cv: Wrong captcha length: %s. Trying '
-                         'again...', pname, code)
-            continue
-        if len(code) == 4:
-            logging.info('%s-download_cv: Right captcha, entering code: %s',
-                         pname, code)
-            element = driver.find_element(By.ID, input_locator)
-            element.clear()
-            element.send_keys(code + '\n')
-            logging.info('%s-download_cv: Waiting for download...', pname)
-            wait = WebDriverWait(driver, 2)
-            locator = (By.ID, captcha_locator)
-            condition = EC.invisibility_of_element_located(locator)
-            element = wait.until(condition)
-            if glob.glob('xmls/' + long_id + '*') != []:
-                logging.info('%s-download_cv: Download in file-system.', pname)
-                break
-            else:
-                logging.info('%s-download_cv: Download not in file-system. '
-                             'Trying again...', pname)
-                continue
-
-
 def worker(short_id_list, long_id_file, verbose):
     """Given a list of short_ids it iterates over them to get the long_id."""
     os.nice(-20)
     pname = current_process().name
     user_agent = UserAgent(cache=False)
     logging.info('%s: Started', pname)
-    try:
-        lattesdriver = LattesDriver()
-        display = lattesdriver.get_display()
-        driver = lattesdriver.get_driver()
-    except WebDriverException, error:
-        print error
-        sys.exit('Failed to initialize selenium drivers. Calm down, '
-                 'sometimes this happens, please try again. If this error '
-                 'persists check if the Browser version is compatible with '
-                 'selenium.')
     output_file = open(long_id_file, 'a')
     for count, short_id in enumerate(short_id_list):
         while True:
@@ -186,8 +305,11 @@ def worker(short_id_list, long_id_file, verbose):
                              pname, short_id)
                 headers = {}
                 headers['User-Agent'] = user_agent.random
-                cv_req = requests.get(get_short_url(short_id), headers=headers)
+                cv_req = requests.get(get_short_url(short_id),
+                                        headers=headers)
                 page = verify_page(cv_req)
+                # cv_req = get_cv_page(short_id, pname)
+                # page = verify_page(cv_req)
                 if page == 'CVPAGE':
                     logging.info('%s- Inside CVPAGE, scraping long_id', pname)
                     long_id = scrap_long_id(cv_req)
@@ -204,7 +326,7 @@ def worker(short_id_list, long_id_file, verbose):
                         try:
                             logging.info('%s- Downloading the CV for long_id:'
                                          ' %s', pname, long_id)
-                            download_cv(driver, long_id)
+                            download_curriculum(long_id, pname)
                             logging.info('%s- Download finished!', pname)
                             break
                         except:
@@ -233,8 +355,6 @@ def worker(short_id_list, long_id_file, verbose):
                 logging.info('%s-[Loop-%s]=> Request Error: %s\nTrying '
                              'again...', pname, count+1, rerror)
                 continue
-    driver.close()
-    display.stop()
     cleanup(pname[-1])
 
 
