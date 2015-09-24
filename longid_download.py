@@ -301,15 +301,17 @@ def worker(short_id_list, long_id_file, verbose):
     for count, short_id in enumerate(short_id_list):
         while True:
             try:
-                logging.info('%s- Getting CVPAGE for shortid: %s',
-                             pname, short_id)
-                headers = {}
-                headers['User-Agent'] = user_agent.random
-                cv_req = requests.get(get_short_url(short_id),
-                                        headers=headers)
-                page = verify_page(cv_req)
-                # cv_req = get_cv_page(short_id, pname)
+                # BRUT FORCE
+                # logging.info('%s- Getting CVPAGE for shortid: %s',
+                #              pname, short_id)
+                # headers = {}
+                # headers['User-Agent'] = user_agent.random
+                # cv_req = requests.get(get_short_url(short_id),
+                #                         headers=headers)
                 # page = verify_page(cv_req)
+                # STEP BY STEP
+                cv_req = get_cv_page(short_id, pname)
+                page = verify_page(cv_req)
                 if page == 'CVPAGE':
                     logging.info('%s- Inside CVPAGE, scraping long_id', pname)
                     long_id = scrap_long_id(cv_req)

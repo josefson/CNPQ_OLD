@@ -10,16 +10,10 @@ The problem was broken into 3 parts, which are necessary for getting the final o
 ## Requirements
 Python 2.7.X
 
-Mozilla Firefox - Sersion supported by Selenium libraries. At the present time i used the 35.0.1.
-
-Xvfb - X virtual frame buffer, which is used for a headless browser.
-
 Python libraries necessary:
 * requests
 * BeautifulSoup
 * lxml
-* selenium
-* pyvirtualdisplay
 * Pillow
 * fake-useragent
 
