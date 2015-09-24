@@ -267,10 +267,11 @@ def verify_page(page_req):
     """Given a page request returns a match of which page it belongs to."""
     input_box_id = 'informado'
     cv_page_req_href = 'download'
-    not_found = "<html><head><title>Curr\xedculo n\xe3o encontrado!</title>"\
-                "</head><body><div style='font-family:Arial;font-size=10pt;"\
-                "align:center;color:red;font-weight:bold'>Curr\xedculo n\xe3"\
-                "o encontrado</div></body></html>"
+    not_found_match = "<html><head><title>Curr\xedculo n\xe3o encontrado!"\
+                      "</title></head><body><div style='font-family:Arial;"\
+                      "font-size=10pt;align:center;color:red;font-weight:"\
+                      "bold'>Curr\xedculo n\xe3o encontrado</div></body>"\
+                      "</html>"
     content = page_req.content
     soup = BeautifulSoup(content, 'lxml')
     if soup.find(id=input_box_id):
@@ -278,7 +279,7 @@ def verify_page(page_req):
     elif soup.find(href=re.compile(cv_page_req_href)):
         return 'CVPAGE'
     else:
-        if content == not_found:
+        if content == not_found_match:
             return 'NOTFOUND'
 
 
@@ -287,43 +288,55 @@ def scrap_long_id(cv_page_req):
     source = cv_page_req.content
     soup = BeautifulSoup(source, 'lxml')
     link = soup.find(href=re.compile(r'(\d{16})'))
-    long_id = re.search(r'(\d{16})', str(link)).group(1)
-    return long_id
+    if link is None:
+        return 'NOTFOUND'
+    else:
+        long_id = re.search(r'(\d{16})', str(link)).group(1)
+        return long_id
 
 
-def worker(short_id_list, long_id_file, verbose):
+def not_found(output_file, pname, loop_count, total_count, short_id):
+    """This method does things when a NOTFOUND page is found."""
+    logging.info('%s-[%s/%s]=> short_id: %s | long_id: NOTFOUND', pname,
+                 loop_count+1, total_count, short_id)
+    output_file.write(short_id + ' | NOTFOUND\n')
+    output_file.flush()
+    print '{}-[{}/{}]=> short_id: {} | NOTFOUND'.format(
+        pname, loop_count+1, total_count, short_id)
+
+
+def worker(short_id_list, long_id_file, nice, verbose):
     """Given a list of short_ids it iterates over them to get the long_id."""
-    os.nice(-20)
+    if nice is True:
+        os.nice(20)
     pname = current_process().name
-    user_agent = UserAgent(cache=False)
     logging.info('%s: Started', pname)
     output_file = open(long_id_file, 'a')
     for count, short_id in enumerate(short_id_list):
         while True:
             try:
-                # BRUT FORCE
-                # logging.info('%s- Getting CVPAGE for shortid: %s',
-                #              pname, short_id)
-                # headers = {}
-                # headers['User-Agent'] = user_agent.random
-                # cv_req = requests.get(get_short_url(short_id),
-                #                         headers=headers)
-                # page = verify_page(cv_req)
-                # STEP BY STEP
+                logging.info('%s- Getting CVPAGE for short_id: %s',
+                             pname, short_id)
                 cv_req = get_cv_page(short_id, pname)
                 page = verify_page(cv_req)
                 if page == 'CVPAGE':
                     logging.info('%s- Inside CVPAGE, scraping long_id', pname)
-                    long_id = scrap_long_id(cv_req)
-                    logging.info('%s-[%s/%s]=> short_id: %s | long_id: %s',
-                                 pname, count+1, len(short_id_list), short_id,
-                                 long_id)
-                    output_file.write(short_id + ' | ' + long_id + '\n')
-                    output_file.flush()
-                    if verbose is True:
-                        print '{}-[{}/{}]=> short_id: {} | long_id: {}'.format(
-                            pname, count+1, len(short_id_list), short_id,
-                            long_id)
+                    if scrap_long_id(cv_req) == 'NOTFOUND':
+                        logging.info('%s- Inside CVPAGE, NO long_id!!', pname)
+                        not_found(output_file, pname, count,
+                                  len(short_id_list), short_id)
+                        break
+                    else:
+                        long_id = scrap_long_id(cv_req)
+                        logging.info('%s-[%s/%s]=> short_id: %s | long_id: %s',
+                                     pname, count+1, len(short_id_list),
+                                     short_id, long_id)
+                        output_file.write(short_id + ' | ' + long_id + '\n')
+                        output_file.flush()
+                        if verbose is True:
+                            print '{}-[{}/{}]=> short_id: {} | long_id: {}'.\
+                                    format(pname, count+1, len(short_id_list),
+                                           short_id, long_id)
                     while True:
                         try:
                             logging.info('%s- Downloading the CV for long_id:'
@@ -336,14 +349,9 @@ def worker(short_id_list, long_id_file, verbose):
                                          'Trying again...', pname)
                             continue
                     break
-                elif page == 'NOTFOUND':
-                    logging.info('%s-[%s/%s]=> short_id: %s | long_id: '
-                                 'NOTFOUND', pname, count+1,
-                                 len(short_id_list), short_id)
-                    output_file.write(short_id + ' | NOTFOUND\n')
-                    output_file.flush()
-                    print '{}-[{}/{}]=> short_id: {} | NOTFOUND'.format(
-                        pname, count+1, len(short_id_list), short_id)
+                if page == 'NOTFOUND':
+                    not_found(output_file, pname, count, len(short_id_list),
+                              short_id)
                     break
             except requests.exceptions.Timeout as terror:
                 logging.info('%s-[Loop-%s]=> Timeout: %s\nTrying again...',
@@ -360,7 +368,7 @@ def worker(short_id_list, long_id_file, verbose):
     cleanup(pname[-1])
 
 
-def main(workers, i_file, o_file, verbose):
+def main(workers, i_file, o_file, nice, verbose):
     """Main function, which controls the workflow of the program."""
     short_id_file = i_file
     long_id_file = o_file
@@ -368,12 +376,11 @@ def main(workers, i_file, o_file, verbose):
     short_id_list = short_ids(short_id_file)
     splited_lists = split_list(short_id_list, cores)
     for splited_list in range(len(splited_lists)):
-        temp = (splited_lists[splited_list], long_id_file, verbose)
+        temp = (splited_lists[splited_list], long_id_file, nice, verbose)
         process = Process(target=worker, args=temp)
         process.start()
 
 if __name__ == '__main__':
-    os.nice(-20)
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument('-w', '--worker', dest='cores', required=True,
                         type=int, help='Required: Number of workers to split '
@@ -389,5 +396,11 @@ if __name__ == '__main__':
     PARSER.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         default=False, help='Optional: Allow you to see the '
                         'scrap/download progress.')
+    PARSER.add_argument('-n', '--nice', dest='nice', action='store_true',
+                        default=False, help='Optional: This sets the workers'
+                        ' with the highest niceness/cpu-priiority possible.')
     ARGS = PARSER.parse_args()
-    main(ARGS.cores, ARGS.short_id_file, ARGS.long_id_file, ARGS.verbose)
+    if ARGS.nice is True:
+        os.nice(20)
+    main(ARGS.cores, ARGS.short_id_file, ARGS.long_id_file, ARGS.nice,
+         ARGS.verbose)

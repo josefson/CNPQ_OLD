@@ -60,6 +60,8 @@ optional arguments:
                         useful in the future.
     -v, --verbose       Optional: Allow you to see the scrap/download
                         progress.
+    -n, --nice          Optional: This sets the workers with the highest 
+                        niceness/cpu-priiority possible.
 
 python longid_download.py -v -w 2 -i my_shortID_file.csv -o my_longID_output.csv
 Process-1-[2/50]=> short_id: K4130902J7  |  long_id: 2253022128647589
@@ -71,16 +73,20 @@ Process-1-[4/50]=> short_id: K4138503E6  |  long_id: 1156552473591486
 see zips in xmls folder
 ```
 
-## sudo
-Unfortunatly in order to get more cpu time, for performance reasons, it was added
-code that will set the niceness of each worker. To do such a thing it had to be 
-used sudo privileges, since only a sudoer user can use the unix nice() feature.
-So, you should inspect the code and feel if you are confortable with this design 
-decision or not, since i am not to be held responsable for any problems that may 
-inflict you or your enviroment.
+## Nice
+With performance in mind, code was added in order to set maximum cpu priority
+to the workers. Unfortunatly, it requires the script to be runned with sudo
+privileges. It uses the nice() feature of UNIX-like systems in order to achieve that.
+
+Now, because it can be a sensitive question, a flag (-n/--nice) was added to let
+the user decide what he/she wants. Now, bare in mind there is a log.txt file 
+which if once created with sudo privileges, it will break next runs without sudo. 
+Appart from that everything seems ok.
+Also, you should feel free to inspect the code and decide for yourself if you 
+trust it or not, since i am not to be held responsible for whatever may occour 
+in your enviroment.
 
 ## To Do
-* Do the download step with the requests library if possible.
 * Find a way to set niceness without sudo privileges.
 * Port to Windows.
 

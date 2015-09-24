@@ -81,7 +81,8 @@ class Captcha(object):
 
     def crack(self):
         """Iterate over the symbol library trying to match symbols."""
-        self.image.save('temp.png')
+        temp_image = self.captcha[:-4] + '_crack' + '.png'
+        self.image.save(temp_image)
         height = self.image.height
         characters = []
         for symbol in self.symbols:
@@ -93,7 +94,7 @@ class Captcha(object):
                     break
         characters = sorted(characters, key=itemgetter(1))
         self.characters = characters
-        for temp in glob.glob('temp.png'):
+        for temp in glob.glob(temp_image):
             os.remove(temp)
 
     def get_text(self):
