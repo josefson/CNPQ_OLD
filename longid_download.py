@@ -51,10 +51,19 @@ def split_list(alist, wanted_parts):
             for i in range(wanted_parts)]
 
 
-def cleanup(pnumber):
+def set_up():
+    """Function responsible to make the enviroment ready to be executed."""
+    xmls_path = 'xmls/'
+    if glob.glob(xmls_path) == []:
+        os.mkdir(xmls_path)
+
+
+def tear_down(pnumber):
     """This function will clean temporary files created by a process, given a
     process number."""
-    trash = glob.glob('*' + str(pnumber) + '.png')
+    img_name = 'captcha_' + current_process().name + '.png'
+    # trash = glob.glob('*' + str(pnumber) + '.png')
+    trash = glob.glob(img_name)
     if trash:
         for i in trash:
             os.remove(i)
@@ -129,8 +138,7 @@ def inform_captcha(session, url, referer, pname):
     headers['X-Requested-With'] = 'XMLHttpRequest'
     while True:
         try:
-            logging.info('%s-inform_captcha: Informing captcha for '
-                         'download.', pname)
+            logging.info('%s-inform_captcha: Informing captcha...', pname)
             req = session.get(url, headers=headers)
         except requests.exceptions.Timeout as terror:
             logging.info('%s-inform_captcha: Timeout: %s\nTrying '
@@ -365,11 +373,12 @@ def worker(short_id_list, long_id_file, nice, verbose):
                 logging.info('%s-[Loop-%s]=> Request Error: %s\nTrying '
                              'again...', pname, count+1, rerror)
                 continue
-    cleanup(pname[-1])
+    tear_down(pname[-1])
 
 
 def main(workers, i_file, o_file, nice, verbose):
     """Main function, which controls the workflow of the program."""
+    set_up()
     short_id_file = i_file
     long_id_file = o_file
     cores = workers
