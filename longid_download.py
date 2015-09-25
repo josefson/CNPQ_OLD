@@ -96,11 +96,11 @@ def captcha_page(session, referer, pname):
     headers['DNT'] = '1'
     headers['Host'] = 'buscatextual.cnpq.br'
     headers['Referer'] = referer
-    headers['User-Agent'] = USER_AGENT.random
     img_name = 'captcha_' + current_process().name + '.png'
     while True:
         try:
             logging.info('%s-captcha_page: Getting captcha page.', pname)
+            headers['User-Agent'] = USER_AGENT.random
             req = session.get(captcha_url, headers=headers)
         except requests.exceptions.Timeout as terror:
             logging.info('%s-captcha_page: Timeout: %s\nTrying again...',
@@ -114,12 +114,18 @@ def captcha_page(session, referer, pname):
             logging.info('%s-captcha_page: Request Error: %s\nTrying '
                          'again...', pname, rerror)
             continue
-        open(img_name, 'wb').write(req.content)
-        code = Captcha(img_name).get_text().upper()
-        if len(code) == 4:
-            logging.info('%s-captcha_page: Right captcha length: %s',
-                         pname, code)
-            return code
+        if req.status_code != 200:
+            continue
+        try:
+            open(img_name, 'wb').write(req.content)
+            code = Captcha(img_name).get_text().upper()
+            if len(code) == 4:
+                logging.info('%s-captcha_page: Right captcha length: %s',
+                             pname, code)
+                return code
+        except Exception, ioerror:
+            logging.info('%s-captcha_page: %s', pname, ioerror)
+            continue
 
 
 def inform_captcha(session, url, referer, pname):
