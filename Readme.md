@@ -17,6 +17,19 @@ Python libraries necessary:
 * Pillow
 * fake-useragent
 
+## Installation
+### OSX
+```
+pip install requests beautifulsoup4 lxml Pillow fake-useragent
+```
+### Ubuntu
+```
+sudo apt-get install python-lxml python-pip
+sudo pip install requests beautifulsoup4 faker-useragent
+sudo pip install Pillow -U
+```
+
+##Usage
 Once all the pre-requirements are met just run it and wait:
 1st We scrap all shortIDs saving them in the output file.
 ```
