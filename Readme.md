@@ -29,7 +29,7 @@ sudo pip install requests beautifulsoup4 faker-useragent
 sudo pip install Pillow -U
 ```
 
-##Usage
+## Usage
 Once all the pre-requirements are met just run it and wait:
 1st We scrap all shortIDs saving them in the output file.
 ```
