@@ -15,11 +15,13 @@ from multiprocessing import Process, current_process
 
 INTERVAL = 1000   # results per page.
 
+
 def split_list(alist, wanted_parts=1):
     """Split a list of intervals in n parts in order to be multiprocessed."""
     length = len(alist)
     return [alist[i*length // wanted_parts: (i+1)*length // wanted_parts]
             for i in range(wanted_parts)]
+
 
 def search(reg_from, reg_to):
     """Performs a page requests given an interval."""
@@ -32,12 +34,14 @@ def search(reg_from, reg_to):
     results = requests.get(url)
     return results
 
+
 def results_total():
     """Returns the total of results inside the search() query. This is used
     in order to multiprocess and create the pagination list."""
     results = search(0, 10)
     soup = BeautifulSoup(results.content, 'lxml')
     return int(str(soup.find('b')).lstrip('<b>').rstrip('</b>'))
+
 
 def process_people(search_result):
     """Returns a list of tuples."""
@@ -53,6 +57,7 @@ def process_people(search_result):
         people.append(data)
     return people
 
+
 def pagination():
     """Returns a list of pages, where page is an interval of registers,
     from/to."""
@@ -61,6 +66,7 @@ def pagination():
     pages = range(0, total, INTERVAL)
     return pages
 
+
 def worker(page_list, short_id_file):
     """This is the function to be multiprocessed. It iterates over a list of
     pagigation values, requesting, scraping the shortIds of each
@@ -68,10 +74,12 @@ def worker(page_list, short_id_file):
     data = open(short_id_file, 'a')
     pname = current_process().name
     start = time.time()
-    time_stamp = datetime.datetime.fromtimestamp(start).strftime('%Y-%m-%d %H:%M:%S')
+    time_stamp = datetime.datetime.fromtimestamp(start).strftime('%Y-%m-%d '
+                                                                 '%H:%M:%S')
     print '{}- {}'.format(pname, time_stamp)
     for reg_from in page_list:
-        print '{}- Scrapping from {} to {} registers'.format(pname, reg_from, reg_from + INTERVAL)
+        print '{}- Scrapping from {} to {} registers'.format(pname, reg_from,
+                                                             reg_from+INTERVAL)
         researchers = process_people(search(reg_from, INTERVAL))
         for researcher in researchers:
             if len(researcher) > 0:
@@ -79,8 +87,10 @@ def worker(page_list, short_id_file):
                 data.flush()
     data.close()
     end = time.time()
-    time_stamp = datetime.datetime.fromtimestamp(end).strftime('%Y-%m-%d %H:%M:%S')
+    time_stamp = datetime.datetime.fromtimestamp(end).strftime('%Y-%m-%d '
+                                                               '%H:%M:%S')
     print '{}- {}'.format(pname, time_stamp)
+
 
 def main(workers, o_file):
     """Main function, which controls the workflow of the program."""
