@@ -113,10 +113,6 @@ No sponsors yet! Will you be the first?
 [![PayPayl donate button](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WA7DVSWHPZLBE "Donate to this project using Paypal")
 
 
-## To Do
-* Do the download step with the requests library if possible.
-
-
 ## LICENSE
 Copyright (c) 2015 Josefson Fraga Souza
 
