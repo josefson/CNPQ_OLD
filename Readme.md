@@ -86,37 +86,6 @@ Process-1-[4/50]=> short_id: K4138503E6  |  long_id: 1156552473591486
 see zips in xmls folder
 ```
 
-=======
-python longid_download.py -h/--help for more information
-usage: longid_download.py [-h] -w CORES -i SHORT_ID_FILE -o LONG_ID_FILE [-v]
-optional arguments:
-    -h, --help          show this help message and exit
-    -w CORES, --worker CORES
-                        Required: Number of workers to split the task into
-                        processes. This is done in order to get a higher cpu
-                        time.
-    -i SHORT_ID_FILE, --input SHORT_ID_FILE
-                        Required: A input file filled with short_ids separated
-                        by new-line-characters.
-    -o LONG_ID_FILE, --output LONG_ID_FILE
-                        Required: A output file to be writen with long_idsa.
-                        Since long_ids are the Primary Keys, those could be
-                        useful in the future.
-    -v, --verbose       Optional: Allow you to see the scrap/download
-                        progress.
-    -n, --nice          Optional: This sets the workers with the highest 
-                        niceness/cpu-priiority possible.
-
-python longid_download.py -v -w 2 -i my_shortID_file.csv -o my_longID_output.csv
-Process-1-[2/50]=> short_id: K4130902J7  |  long_id: 2253022128647589
-Process-2-[2/50]=> short_id: K4133392U6  |  long_id: 0449582690670596
-Process-1-[3/50]=> short_id: K4130301E5  |  long_id: 7397201484989375
-Process-2-[3/50]=> short_id: K4131812T0  |  long_id: 2222910728338238
-Process-1-[4/50]=> short_id: K4138503E6  |  long_id: 1156552473591486
-...
-see zips in xmls folder
-```
-
 ## Nice
 With performance in mind, code was added in order to set maximum cpu priority
 to the workers. Unfortunatly, it requires the script to be runned with sudo
