@@ -24,7 +24,7 @@ pip install requests beautifulsoup4 lxml Pillow fake-useragent
 ```
 ### Ubuntu
 ```
-sudo apt-get install python-lxml python-pip
+sudo apt-get install python-dev python-pip python-lxml gcc libjpeg-dev zlib1g-dev
 sudo pip install requests beautifulsoup4 faker-useragent
 sudo pip install Pillow -U
 ```
