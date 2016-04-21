@@ -104,12 +104,12 @@ in your enviroment.
 * Port to Windows.
 
 ## Thanks
-Special thanks to my friend Bruno Duarte that guided me in the way how images work.
+Special thanks to my friend Bruno Duarte that guided me in the way how images works and to my sponsors.
 
 ### Sponsors
 
-Roney Fraga
-Sheila Leite
+*   Roney Fraga
+*   Sheila Leite
 
 [![PayPayl donate button](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WA7DVSWHPZLBE "Donate to this project using Paypal")
 
