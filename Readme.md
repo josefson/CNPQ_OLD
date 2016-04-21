@@ -108,7 +108,8 @@ Special thanks to my friend Bruno Duarte that guided me in the way how images wo
 
 ### Sponsors
 
-No sponsors yet! Will you be the first?
+Roney Fraga
+Sheila Leite
 
 [![PayPayl donate button](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WA7DVSWHPZLBE "Donate to this project using Paypal")
 
