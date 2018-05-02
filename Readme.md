@@ -1,3 +1,7 @@
+# ATENTION
+This project is deprecated in favor of a more flexible and robust version that can be found at:
+```https://github.com/josefson/CNPQ```
+
 # CNPQ
 Captcha Negated by Python reQuests - For the CNPq lattes database.
 
